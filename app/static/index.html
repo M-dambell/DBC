@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Tracker</title>
+    <script>
+        async function fetchJobs() {
+            const response = await fetch("http://127.0.0.1:5000/jobs");
+            const jobs = await response.json();
+            let jobTable = "<tr><th>ID</th><th>Name</th><th>Job Num</th><th>Qty</th><th>Department</th><th>Status</th></tr>";
+            jobs.forEach(job => {
+                jobTable += `<tr>
+                    <td>${job.id}</td>
+                    <td>${job.name}</td>
+                    <td>${job.job_num}</td>
+                    <td>${job.qty}</td>
+                    <td>${job.department}</td>
+                    <td>${job.status}</td>
+                </tr>`;
+            });
+            document.getElementById("jobTable").innerHTML = jobTable;
+        }
+        window.onload = fetchJobs;
+    </script>
+</head>
+<body>
+    <h1>Job Tracker</h1>
+    <table border="1" id="jobTable"></table>
+</body>
+</html>
