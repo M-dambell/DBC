@@ -9,7 +9,7 @@ def connect_db():
 
 @app.route('/')
 def serve_frontend():
-    return send_from_directory(os.path.join(app.root_path, 'app/static'), 'index.html')
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'index.html')
 
 @app.route('/jobs', methods=['GET'])
 def get_jobs():
