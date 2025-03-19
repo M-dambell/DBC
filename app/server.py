@@ -40,9 +40,10 @@ def get_jobs():
         "job_num": j[2],
         "qty": j[3],
         "details_of_job": j[4],
-        "department": j[5],
-        "person": j[6],
-        "status": j[7]
+        "due_date": j[5],
+        "department": j[6],
+        "person_in_charge": j[7],
+        "status": j[8]
     } for j in jobs]
     return jsonify(job_list)
 
