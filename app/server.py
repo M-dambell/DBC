@@ -1,11 +1,26 @@
+# server.py
 from flask import Flask, jsonify, request, send_from_directory
-import sqlite3
+import psycopg2
 import os
 
 app = Flask(__name__)
 
+# Replace these with your Render PostgreSQL credentials
+DB_NAME = "dbc_jtdb"
+DB_USER = "dbc_jtdb_user"
+DB_PASSWORD = "eBH1D0XF5oAMNt1cuU5sXyob9YzivI0m"
+DB_HOST = "dpg-cvd9jlhu0jms739lbnug-a.oregon-postgres.render.com"
+DB_PORT = 5432
+
 def connect_db():
-    return sqlite3.connect("jobs.db")
+    return psycopg2.connect(
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        host=DB_HOST,
+        port=DB_PORT,
+        sslmode="require"
+    )
 
 @app.route('/')
 def serve_frontend():
@@ -19,7 +34,16 @@ def get_jobs():
     jobs = cursor.fetchall()
     conn.close()
     
-    job_list = [{"id": j[0], "name": j[1], "job_num": j[2], "qty": j[3], "department": j[4], "status": j[5]} for j in jobs]
+    job_list = [{
+        "id": j[0],
+        "name": j[1],
+        "job_num": j[2],
+        "qty": j[3],
+        "details_of_job": j[4],
+        "department": j[5],
+        "person": j[6],
+        "status": j[7]
+    } for j in jobs]
     return jsonify(job_list)
 
 if __name__ == '__main__':
