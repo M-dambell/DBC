@@ -21,7 +21,6 @@ try:
         host=DB_HOST,
         port=DB_PORT,
         sslmode="require",  # Required for Render PostgreSQL
-        connect_timeout=10  # Timeout after 10 seconds
     )
     cursor = conn.cursor()
     print("✅ Connected to the Render database successfully!")
@@ -65,7 +64,9 @@ except Exception as e:
     exit()
 
 # Rename columns to match the database
-df.columns = ["name", "job_num", "qty", "details_of_job", "due_date", "department", "person_in_charge", "status"]
+df.columns = ["name", "job_num", "qty", "details_of_job", "due_date", "department", "person_in_charge", "status", "created_date"]
+
+df["created_date"] = pd.to_datetime(df["created_date"], errors="coerce")  # Ensure correct format
 
 # Remove rows that contain headers or non-data rows
 df = df[~df["name"].str.contains("NAME", na=False)]  # Remove rows where "name" contains "NAME"
@@ -83,23 +84,13 @@ try:
     print("Inserting data into PostgreSQL...")
     for _, row in df.iterrows():
         cursor.execute("""
-            INSERT INTO jobs (name, job_num, qty, details_of_job, due_date, department, person_in_charge, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO jobs (name, job_num, qty, details_of_job, due_date, department, person_in_charge, status, created_date)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (job_num) DO NOTHING
-        """, (
-            row["name"],
-            row["job_num"],
-            row["qty"],
-            row["details_of_job"],
-            row["due_date"] if not pd.isna(row["due_date"]) else None,  # Insert NULL for NaT
-            row["department"],
-            row["person_in_charge"],
-            row["status"]
-        ))
+        """, (row["name"], row["job_num"], row["qty"], row["details_of_job"], row["due_date"], row["department"], row["person_in_charge"], row["status"], row["created_date"]))
     conn.commit()
     print("✅ Data inserted into Render PostgreSQL successfully!")
 except Exception as e:
     print(f"❌ Failed to insert data into Render PostgreSQL: {e}")
 finally:
     conn.close()
-    

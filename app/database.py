@@ -24,15 +24,16 @@ def create_table():
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS jobs (
-        id SERIAL PRIMARY KEY,
-        name TEXT,
-        job_num TEXT UNIQUE,
-        qty INTEGER,
-        details_of_job TEXT,
-        due_date DATE,
-        department TEXT,
-        person_in_charge TEXT,
-        status TEXT
+            id SERIAL PRIMARY KEY,
+            name TEXT,
+            job_num TEXT UNIQUE,
+            qty INTEGER,
+            details_of_job TEXT,
+            due_date DATE,
+            department TEXT,
+            person_in_charge TEXT,
+            status TEXT,
+            created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP  -- Automatically stores the job creation date
         );
     """)
     conn.commit()
