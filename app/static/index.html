@@ -19,6 +19,7 @@
                     <th>Department</th>
                     <th>Person in Charge</th>
                     <th>Status</th>
+                    <th>Created At</th>  <!-- New column added -->
                 </tr>`;
             jobs.forEach(job => {
                 jobTable += `
@@ -32,7 +33,7 @@
                         <td>${job.department}</td>
                         <td>${job.person_in_charge}</td>
                         <td>${job.status}</td>
-                        <td>${job.created_date || "N/A"}</td>
+                        <td>${job.created_at || "N/A"}</td>
                     </tr>`;
             });
             document.getElementById("jobTable").innerHTML = jobTable;

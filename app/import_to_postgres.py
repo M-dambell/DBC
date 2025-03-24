@@ -1,7 +1,7 @@
 import psycopg2
 import pandas as pd
 from datetime import datetime
-
+from database import create_table
 print("fndmk")
 
 # Replace these with your Render PostgreSQL credentials
@@ -32,19 +32,7 @@ except psycopg2.OperationalError as e:
 # Ensure the table exists
 try:
     print("Creating 'jobs' table if it doesn't exist...")
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS jobs (
-            id SERIAL PRIMARY KEY,
-            name TEXT,
-            job_num TEXT UNIQUE,
-            qty INTEGER,
-            details_of_job TEXT,
-            due_date DATE,
-            department TEXT,
-            person_in_charge TEXT,
-            status TEXT
-        )
-    """)
+    create_table();
     conn.commit()
     print("✅ 'jobs' table created or already exists.")
 except Exception as e:
@@ -65,14 +53,17 @@ except Exception as e:
     exit()
 
 # Rename columns to match the database
-df.columns = ["name", "job_num", "qty", "details_of_job", "due_date", "department", "person_in_charge", "status"]
+df.columns = ["name", "job_num", "qty", "details_of_job", "due_date", "department", "person_in_charge", "status", "created_at"]
 
 # Remove rows that contain headers or non-data rows
 df = df[~df["name"].str.contains("NAME", na=False)]  # Remove rows where "name" contains "NAME"
 
-# Convert 'due_date' to proper format and handle NaT values
+# Convert to proper format and handle NaT values
 df["due_date"] = pd.to_datetime(df["due_date"], errors="coerce")
+df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce")
+
 df["due_date"] = df["due_date"].apply(lambda x: None if pd.isna(x) else x)  # Replace NaT with None
+df["created_at"] = df["created_at"].apply(lambda x: None if pd.isna(x) else x)
 
 # Clean the 'qty' column: ensure it contains only numeric values
 df["qty"] = pd.to_numeric(df["qty"], errors="coerce")  # Convert non-numeric values to NaN
@@ -83,8 +74,8 @@ try:
     print("Inserting data into PostgreSQL...")
     for _, row in df.iterrows():
         cursor.execute("""
-            INSERT INTO jobs (name, job_num, qty, details_of_job, due_date, department, person_in_charge, status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO jobs (name, job_num, qty, details_of_job, due_date, department, person_in_charge, status, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (job_num) DO NOTHING
         """, (
             row["name"],
@@ -94,7 +85,8 @@ try:
             row["due_date"] if not pd.isna(row["due_date"]) else None,  # Insert NULL for NaT
             row["department"],
             row["person_in_charge"],
-            row["status"]
+            row["status"],
+            row["created_at"]
         ))
     conn.commit()
     print("✅ Data inserted into Render PostgreSQL successfully!")

@@ -43,7 +43,8 @@ def get_jobs():
         "due_date": j[5],
         "department": j[6],
         "person_in_charge": j[7],
-        "status": j[8]
+        "status": j[8],
+        "created_at": j[9]
     } for j in jobs]
     return jsonify(job_list)
 
