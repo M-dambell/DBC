@@ -3,24 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job Tracker</title>
+    <title>Job Trackerr</title>
     <script>
-        async function fetchJobs() {
-            const response = await fetch("http://127.0.0.1:5000/jobs");
-            const jobs = await response.json();
+        // Main fetch function
+        async function fetchJobs(url = "/jobs") {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error("Failed to fetch jobs:", error);
+                alert("Failed to load jobs. Please check console for details.");
+                return [];
+            }
+        }
+    
+        // Filter function
+        async function filterJobs() {
+            const status = document.getElementById("statusFilter").value;
+            const url = status === "all" ? "/jobs" : `/jobs?status=${status}`;
+            const jobs = await fetchJobs(url);
+            renderJobs(jobs);
+        }
+    
+        // Render function
+        function renderJobs(jobs) {
             let jobTable = `
                 <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Job Num</th>
-                    <th>Qty</th>
-                    <th>Details of Job</th>
-                    <th>Due Date</th>
-                    <th>Department</th>
-                    <th>Person in Charge</th>
-                    <th>Status</th>
-                    <th>Created At</th>  <!-- New column added -->
+                    <th onclick="sortJobs('id')">ID ▲▼</th>
+                    <th onclick="sortJobs('name')">Name ▲▼</th>
+                    <th onclick="sortJobs('job_num')">Job Num ▲▼</th>
+                    <th onclick="sortJobs('qty')">Qty ▲▼</th>
+                    <th onclick="sortJobs('details_of_job')">Details ▲▼</th>
+                    <th onclick="sortJobs('due_date')">Due Date ▲▼</th>
+                    <th onclick="sortJobs('department')">Department ▲▼</th>
+                    <th onclick="sortJobs('person_in_charge')">Person ▲▼</th>
+                    <th onclick="sortJobs('status')">Status ▲▼</th>
+                    <th onclick="sortJobs('created_at')">Created At ▲▼</th>
+                    <th>Actions</th>
                 </tr>`;
+            
             jobs.forEach(job => {
                 jobTable += `
                     <tr>
@@ -34,15 +56,206 @@
                         <td>${job.person_in_charge}</td>
                         <td>${job.status}</td>
                         <td>${job.created_at || "N/A"}</td>
+                        <td><button onclick="openEditModal(${JSON.stringify(job).replace(/"/g, '&quot;')})">Edit</button></td>
                     </tr>`;
             });
+            
             document.getElementById("jobTable").innerHTML = jobTable;
         }
-        window.onload = fetchJobs;
+    
+        // Sorting logic
+        let currentSort = { column: null, direction: 'asc' };
+    
+        async function sortJobs(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort = { column, direction: 'asc' };
+            }
+            
+            const jobs = await fetch(`/jobs?sort=${column}&order=${currentSort.direction}`)
+                .then(res => res.json());
+            renderJobs(jobs);
+        }
+    
+        // Modal functions
+        function openEditModal(job) {
+            document.getElementById("editId").value = job.id;
+            document.getElementById("editName").value = job.name;
+            document.getElementById("editJobNum").value = job.job_num;
+            document.getElementById("editStatus").value = job.status;
+            document.getElementById("editCreatedAt").textContent = job.created_at || "N/A";
+            document.getElementById("editModal").style.display = "block";
+        }
+    
+        function closeModal() {
+            document.getElementById("editModal").style.display = "none";
+        }
+    
+        async function saveJob() {
+            try {
+                const jobId = document.getElementById("editId").value;
+                const response = await fetch(`/jobs/${jobId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: document.getElementById("editName").value,
+                        job_num: document.getElementById("editJobNum").value,
+                        status: document.getElementById("editStatus").value
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || "Failed to update job");
+                }
+                
+                closeModal();
+                const jobs = await fetchJobs();
+                renderJobs(jobs);
+            } catch (error) {
+                console.error("Error saving job:", error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+    
+        // Initialize
+        window.onload = async function() {
+            const jobs = await fetchJobs();
+            renderJobs(jobs);
+        };
     </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .controls {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        select, button {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #e9e9e9;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 20px;
+            width: 50%;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+        #editForm label {
+            display: block;
+            margin: 10px 0;
+        }
+        #editForm input, #editForm select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+    </style>
 </head>
+<!-- Edit Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Edit Job</h2>
+        <form id="editForm">
+            <input type="hidden" id="editId">
+            <label>Name: <input type="text" id="editName" required></label>
+            <label>Job Num: <input type="text" id="editJobNum" required></label>
+            <label>Status: 
+                <select id="editStatus" required>
+                    <option value="designing">Designing</option>
+                    <option value="in progress">In Progress</option>
+                    <option value="waiting on approval">Waiting Approval</option>
+                </select>
+            </label>
+            <label>Created At: <span id="editCreatedAt">N/A</span></label>
+            <button type="button" onclick="saveJob()">Save</button>
+        </form>
+    </div>
+</div>
 <body>
     <h1>Job Tracker</h1>
+    <!-- ADD THIS FILTER CONTROL -->
+    <div class="controls">
+        <label for="statusFilter">Filter by Status:</label>
+        <select id="statusFilter" onchange="filterJobs()">
+            <option value="all">All Statuses</option>
+            <option value="designing">Designing</option>
+            <option value="in progress">In Progress</option>
+            <option value="waiting on approval">Waiting Approval</option>
+        </select>
+    </div>
     <table border="1" id="jobTable"></table>
 </body>
 </html>
