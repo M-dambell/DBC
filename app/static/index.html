@@ -124,6 +124,45 @@
             const jobs = await fetchJobs();
             renderJobs(jobs);
         };
+
+
+        // Open/Close Create Modal
+function openCreateModal() {
+    document.getElementById("createModal").style.display = "block";
+}
+function closeCreateModal() {
+    document.getElementById("createModal").style.display = "none";
+}
+
+// Create Job
+async function createJob() {
+    try {
+        const response = await fetch("/jobs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name: document.getElementById("createName").value,
+                job_num: document.getElementById("createJobNum").value,
+                qty: parseInt(document.getElementById("createQty").value),
+                details_of_job: document.getElementById("createDetails").value,
+                due_date: document.getElementById("createDueDate").value || null,
+                department: document.getElementById("createDepartment").value,
+                person_in_charge: document.getElementById("createPerson").value,
+                status: document.getElementById("createStatus").value
+            })
+        });
+
+        if (!response.ok) throw new Error("Failed to create job");
+        
+        closeCreateModal();
+        const jobs = await fetchJobs(); // Refresh the table
+        renderJobs(jobs);
+    } catch (error) {
+        console.error("Error creating job:", error);
+        alert("Error: " + error.message);
+    }
+}
+
     </script>
     <style>
         body {
@@ -221,6 +260,14 @@
             margin-top: 5px;
             box-sizing: border-box;
         }
+        /* Ensure textarea matches other inputs */
+        textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
     </style>
 </head>
 <!-- Edit Modal -->
@@ -244,6 +291,38 @@
         </form>
     </div>
 </div>
+
+<!-- Create Job Modal -->
+<div id="createModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeCreateModal()">&times;</span>
+        <h2>Create New Job</h2>
+        <form id="createForm">
+            <label>Name: <input type="text" id="createName" required></label>
+            <label>Job Num: <input type="text" id="createJobNum" required></label>
+            <label>Qty: <input type="number" id="createQty" required></label>
+            <label>Details: <textarea id="createDetails"></textarea></label>
+            <label>Due Date: <input type="date" id="createDueDate"></label>
+            <label>Department: 
+                <select id="createDepartment" required>
+                    <option value="digital Print">Digital Print</option>
+                    <option value="Production">Production</option>
+                    <option value="screen">Screen</option>
+                </select>
+            </label>
+            <label>Person in Charge: <input type="text" id="createPerson"></label>
+            <label>Status: 
+                <select id="createStatus" required>
+                    <option value="designing">Designing</option>
+                    <option value="in progress">In Progress</option>
+                    <option value="waiting on approval">Waiting Approval</option>
+                </select>
+            </label>
+            <button type="button" onclick="createJob()">Save</button>
+        </form>
+    </div>
+</div>
+
 <body>
     <h1>Job Tracker</h1>
     <!-- ADD THIS FILTER CONTROL -->
@@ -255,7 +334,10 @@
             <option value="in progress">In Progress</option>
             <option value="waiting on approval">Waiting Approval</option>
         </select>
+
+        <!-- Add this inside the <div class="controls"> section -->
+        <button onclick="openCreateModal()">Create New Job</button>
     </div>
-    <table border="1" id="jobTable"></table>
+    <table border="1.5" id="jobTable"></table>
 </body>
 </html>

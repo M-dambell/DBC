@@ -63,7 +63,7 @@ def get_jobs():
         "department": j[6],
         "person_in_charge": j[7],
         "status": j[8],
-        "created_at": j[9].strftime('%Y-%m-%d %H:%M:%S') if j[9] else None
+        "created_at": j[9].strftime('%Y-%m-%d %H:%M') if j[9] else None
     } for j in jobs]
     
     return jsonify(job_list)
@@ -93,6 +93,47 @@ def update_job(job_id):
             "status": updated_job[8],
             "created_at": updated_job[9].strftime('%Y-%m-%d %H:%M:%S') if updated_job[9] else None
         })
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 400
+        
+    finally:
+        conn.close()
+
+
+@app.route('/jobs', methods=['POST'])
+def create_job():
+    data = request.json
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("""
+            INSERT INTO jobs (
+                name, job_num, qty, details_of_job, due_date, 
+                department, person_in_charge, status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING *;
+        """, (
+            data['name'],
+            data['job_num'],
+            data['qty'],
+            data.get('details_of_job', ''),
+            data.get('due_date'),
+            data['department'],
+            data.get('person_in_charge', ''),
+            data['status']
+        ))
+        
+        new_job = cursor.fetchone()
+        conn.commit()
+        
+        return jsonify({
+            "id": new_job[0],
+            "name": new_job[1],
+            "status": new_job[8]
+        }), 201
         
     except Exception as e:
         conn.rollback()
