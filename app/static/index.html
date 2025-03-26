@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job Trackerr</title>
+    <title>Job Tracker</title>
     <script>
         // Main fetch function
         async function fetchJobs(url = "/jobs") {
@@ -25,6 +25,15 @@
             const jobs = await fetchJobs(url);
             renderJobs(jobs);
         }
+
+        <div class="controls">
+            <button onclick="openCreateModal()">+ Add New Job</button>
+            <label for="statusFilter">Filter by Status:
+                <select id="statusFilter" onchange="filterJobs()">
+                    <!-- Your existing options -->
+                </select>
+            </label>
+        </div>
     
         // Render function
         function renderJobs(jobs) {
@@ -118,6 +127,45 @@
                 alert(`Error: ${error.message}`);
             }
         }
+
+        // Modal control functions
+function openCreateModal() {
+    document.getElementById("createModal").style.display = "block";
+}
+
+function closeCreateModal() {
+    document.getElementById("createModal").style.display = "none";
+    document.getElementById("createForm").reset();
+}
+
+// Job creation function
+async function createJob() {
+    try {
+        const response = await fetch('/jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: document.getElementById("createName").value,
+                job_num: document.getElementById("createJobNum").value,
+                qty: parseInt(document.getElementById("createQty").value),
+                details_of_job: document.getElementById("createDetails").value,
+                due_date: document.getElementById("createDueDate").value || null,
+                department: document.getElementById("createDept").value,
+                person_in_charge: document.getElementById("createPerson").value,
+                status: document.getElementById("createStatus").value
+            })
+        });
+
+        if (!response.ok) throw new Error("Failed to create job");
+        
+        closeCreateModal();
+        const jobs = await fetchJobs(); // Refresh the list
+        renderJobs(jobs);
+    } catch (error) {
+        console.error("Error creating job:", error);
+        alert("Failed to create job. Please check console for details.");
+    }
+}
     
         // Initialize
         window.onload = async function() {
@@ -221,6 +269,35 @@
             margin-top: 5px;
             box-sizing: border-box;
         }
+
+        /* Style the Add New Job button */
+        .controls button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .controls button:hover {
+            background: #218838;
+        }
+
+        /* Form textarea */
+        textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 8px;
+            box-sizing: border-box;
+            margin-top: 5px;
+            font-family: inherit;
+        }
+
+        /* Date input */
+        input[type="date"] {
+            padding: 7px;
+        }
     </style>
 </head>
 <!-- Edit Modal -->
@@ -244,6 +321,37 @@
         </form>
     </div>
 </div>
+
+<!-- Create Job Modal -->
+<div id="createModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeCreateModal()">&times;</span>
+        <h2>Create New Job</h2>
+        <form id="createForm">
+            <label>Name: <input type="text" id="createName" required></label>
+            <label>Job Number: <input type="text" id="createJobNum" required></label>
+            <label>Quantity: <input type="number" id="createQty" required></label>
+            <label>Details: <textarea id="createDetails"></textarea></label>
+            <label>Due Date: <input type="date" id="createDueDate"></label>
+            <label>Department: 
+                <select id="createDept">
+                    <option value="digital Print">Digital Print</option>
+                    <option value="screen">Screen</option>
+                    <option value="production">Production</option>
+                </select>
+            </label>
+            <label>Person in Charge: <input type="text" id="createPerson"></label>
+            <label>Status: 
+                <select id="createStatus">
+                    <option value="designing">Designing</option>
+                    <option value="in progress">In Progress</option>
+                    <option value="waiting on approval">Waiting Approval</option>
+                </select>
+            </label>
+            <button type="button" onclick="createJob()">Create Job</button>
+        </form>
+    </div>
+</div>
 <body>
     <h1>Job Tracker</h1>
     <!-- ADD THIS FILTER CONTROL -->
@@ -253,7 +361,7 @@
             <option value="all">All Statuses</option>
             <option value="designing">Designing</option>
             <option value="in progress">In Progress</option>
-            <option value="waiting on approval">Waiting Approval</option>
+            <option value="waiting on approval">Waiting on Approval</option>
         </select>
     </div>
     <table border="1" id="jobTable"></table>

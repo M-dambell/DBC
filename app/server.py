@@ -101,5 +101,48 @@ def update_job(job_id):
     finally:
         conn.close()
 
+
+@app.route('/jobs', methods=['POST'])
+def add_job():
+    data = request.json
+    conn = connect_db()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("""
+            INSERT INTO jobs (
+                name, job_num, qty, details_of_job, 
+                due_date, department, person_in_charge, status
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING *;
+        """, (
+            data['name'],
+            data['job_num'],
+            data['qty'],
+            data['details_of_job'],
+            data['due_date'],
+            data['department'],
+            data['person_in_charge'],
+            data['status']
+        ))
+        
+        new_job = cursor.fetchone()
+        conn.commit()
+        
+        return jsonify({
+            "id": new_job[0],
+            "name": new_job[1],
+            "job_num": new_job[2],
+            "status": new_job[8],
+            "created_at": new_job[9].strftime('%Y-%m-%d %H:%M:%S') if new_job[9] else None
+        }), 201
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 400
+        
+    finally:
+        conn.close()
+
 if __name__ == '__main__':
     app.run(debug=True)
