@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<<<<<<< Updated upstream
     <title>Job Trackerr</title>
     <script>
         // Main fetch function
@@ -339,5 +340,154 @@ async function createJob() {
         <button onclick="openCreateModal()">Create New Job</button>
     </div>
     <table border="1.5" id="jobTable"></table>
+=======
+    <title>Job Tracker</title>
+    <style>
+        /* [Keep all your existing CSS exactly as is] */
+    </style>
+</head>
+<body>
+    <!-- [Keep all your existing HTML structure exactly as is] -->
+    
+    <script>
+        // ===== STATE MANAGEMENT =====
+        let allJobs = [];
+        let currentSort = { column: 'id', direction: 'asc' };
+        
+        // ===== DOM REFERENCES =====
+        const dom = {
+            table: document.getElementById("jobTable"),
+            tbody: document.querySelector("#jobTable tbody"),
+            search: document.getElementById("searchInput"),
+            statusFilter: document.getElementById("statusFilter"),
+            createBtn: document.getElementById("createJobBtn"),
+            loading: document.getElementById("loading"),
+            editModal: document.getElementById("editModal"),
+            createModal: document.getElementById("createModal"),
+            toast: document.getElementById("toast"),
+            createForm: document.getElementById("createForm"),
+            editForm: document.getElementById("editForm")
+        };
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchJobs();
+            setupEventListeners();
+        });
+
+        // ===== CORE FUNCTIONS =====
+        async function fetchJobs() {
+            dom.loading.style.display = "block";
+            try {
+                const res = await fetch('/jobs');
+                if (!res.ok) throw new Error(await res.text());
+                allJobs = await res.json();
+                renderTable(allJobs);
+            } catch (error) {
+                console.error("Fetch error:", error);
+                showToast("Failed to load jobs", "error");
+            } finally {
+                dom.loading.style.display = "none";
+            }
+        }
+
+        function renderTable(jobs) {
+            const fragment = document.createDocumentFragment();
+            
+            jobs.forEach(job => {
+                const row = document.createElement("tr");
+                row.dataset.id = job.id;
+                row.innerHTML = `
+                    <td>${job.id}</td>
+                    <td>${job.name}</td>
+                    <td>${job.job_num}</td>
+                    <td>${job.qty}</td>
+                    <td>${job.details_of_job || ''}</td>
+                    <td>${job.due_date ? new Date(job.due_date).toLocaleDateString() : 'N/A'}</td>
+                    <td>${job.department}</td>
+                    <td>${job.person_in_charge || 'Unassigned'}</td>
+                    <td>${getStatusBadge(job.status)}</td>
+                    <td>${new Date(job.created_at).toLocaleString()}</td>
+                    <td><button class="edit-btn" data-id="${job.id}">Edit</button></td>
+                `;
+                fragment.appendChild(row);
+            });
+            
+            dom.tbody.innerHTML = "";
+            dom.tbody.appendChild(fragment);
+        }
+
+        async function createJob() {
+            const btn = document.querySelector("#createForm button");
+            const originalText = btn.textContent;
+            
+            try {
+                btn.disabled = true;
+                btn.textContent = "Creating...";
+                
+                const formData = {
+                    name: document.getElementById("createName").value,
+                    job_num: document.getElementById("createJobNum").value,
+                    qty: parseInt(document.getElementById("createQty").value) || 1,
+                    details_of_job: document.getElementById("createDetails").value,
+                    due_date: document.getElementById("createDueDate").value || null,
+                    department: document.getElementById("createDept").value,
+                    person_in_charge: document.getElementById("createPerson").value || 'Unassigned',
+                    status: document.getElementById("createStatus").value
+                };
+
+                const response = await fetch('/jobs', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || "Failed to create job");
+                }
+                
+                const newJob = await response.json();
+                allJobs.unshift(newJob);
+                renderTable(allJobs);
+                
+                document.getElementById("createForm").reset();
+                closeModal('createModal');
+                showToast("Job created successfully!");
+                
+            } catch (error) {
+                console.error("Create job error:", error);
+                showToast(error.message || "Failed to create job", "error");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        // [Keep all other existing functions exactly as is]
+
+        // ===== EVENT HANDLERS =====
+        function setupEventListeners() {
+            // Search with debounce
+            let searchTimeout;
+            dom.search.addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    const term = dom.search.value.toLowerCase();
+                    const filtered = allJobs.filter(job => 
+                        job.name.toLowerCase().includes(term) || 
+                        job.job_num.includes(term)
+                    );
+                    renderTable(filtered);
+                }, 300);
+            });
+            
+            // [Keep all other existing event listeners exactly as is]
+        }
+    </script>
+>>>>>>> Stashed changes
 </body>
 </html>
