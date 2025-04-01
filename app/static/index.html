@@ -4,175 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job Tracker</title>
-    <script>
-        // Main fetch function
-        async function fetchJobs(url = "/jobs") {
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return await response.json();
-            } catch (error) {
-                console.error("Failed to fetch jobs:", error);
-                alert("Failed to load jobs. Please check console for details.");
-                return [];
-            }
-        }
-    
-        // Filter function
-        async function filterJobs() {
-            const status = document.getElementById("statusFilter").value;
-            const url = status === "all" ? "/jobs" : `/jobs?status=${status}`;
-            const jobs = await fetchJobs(url);
-            renderJobs(jobs);
-        }
-
-        <div class="controls">
-            <button onclick="openCreateModal()">+ Add New Job</button>
-            <label for="statusFilter">Filter by Status:
-                <select id="statusFilter" onchange="filterJobs()">
-                    <!-- Your existing options -->
-                </select>
-            </label>
-        </div>
-    
-        // Render function
-        function renderJobs(jobs) {
-            let jobTable = `
-                <tr>
-                    <th onclick="sortJobs('id')">ID ▲▼</th>
-                    <th onclick="sortJobs('name')">Name ▲▼</th>
-                    <th onclick="sortJobs('job_num')">Job Num ▲▼</th>
-                    <th onclick="sortJobs('qty')">Qty ▲▼</th>
-                    <th onclick="sortJobs('details_of_job')">Details ▲▼</th>
-                    <th onclick="sortJobs('due_date')">Due Date ▲▼</th>
-                    <th onclick="sortJobs('department')">Department ▲▼</th>
-                    <th onclick="sortJobs('person_in_charge')">Person ▲▼</th>
-                    <th onclick="sortJobs('status')">Status ▲▼</th>
-                    <th onclick="sortJobs('created_at')">Created At ▲▼</th>
-                    <th>Actions</th>
-                </tr>`;
-            
-            jobs.forEach(job => {
-                jobTable += `
-                    <tr>
-                        <td>${job.id}</td>
-                        <td>${job.name}</td>
-                        <td>${job.job_num}</td>
-                        <td>${job.qty}</td>
-                        <td>${job.details_of_job}</td>
-                        <td>${job.due_date || "N/A"}</td>
-                        <td>${job.department}</td>
-                        <td>${job.person_in_charge}</td>
-                        <td>${job.status}</td>
-                        <td>${job.created_at || "N/A"}</td>
-                        <td><button onclick="openEditModal(${JSON.stringify(job).replace(/"/g, '&quot;')})">Edit</button></td>
-                    </tr>`;
-            });
-            
-            document.getElementById("jobTable").innerHTML = jobTable;
-        }
-    
-        // Sorting logic
-        let currentSort = { column: null, direction: 'asc' };
-    
-        async function sortJobs(column) {
-            if (currentSort.column === column) {
-                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort = { column, direction: 'asc' };
-            }
-            
-            const jobs = await fetch(`/jobs?sort=${column}&order=${currentSort.direction}`)
-                .then(res => res.json());
-            renderJobs(jobs);
-        }
-    
-        // Modal functions
-        function openEditModal(job) {
-            document.getElementById("editId").value = job.id;
-            document.getElementById("editName").value = job.name;
-            document.getElementById("editJobNum").value = job.job_num;
-            document.getElementById("editStatus").value = job.status;
-            document.getElementById("editCreatedAt").textContent = job.created_at || "N/A";
-            document.getElementById("editModal").style.display = "block";
-        }
-    
-        function closeModal() {
-            document.getElementById("editModal").style.display = "none";
-        }
-    
-        async function saveJob() {
-            try {
-                const jobId = document.getElementById("editId").value;
-                const response = await fetch(`/jobs/${jobId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: document.getElementById("editName").value,
-                        job_num: document.getElementById("editJobNum").value,
-                        status: document.getElementById("editStatus").value
-                    })
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || "Failed to update job");
-                }
-                
-                closeModal();
-                const jobs = await fetchJobs();
-                renderJobs(jobs);
-            } catch (error) {
-                console.error("Error saving job:", error);
-                alert(`Error: ${error.message}`);
-            }
-        }
-
-        // Modal control functions
-function openCreateModal() {
-    document.getElementById("createModal").style.display = "block";
-}
-
-function closeCreateModal() {
-    document.getElementById("createModal").style.display = "none";
-    document.getElementById("createForm").reset();
-}
-
-// Job creation function
-async function createJob() {
-    try {
-        const response = await fetch('/jobs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: document.getElementById("createName").value,
-                job_num: document.getElementById("createJobNum").value,
-                qty: parseInt(document.getElementById("createQty").value),
-                details_of_job: document.getElementById("createDetails").value,
-                due_date: document.getElementById("createDueDate").value || null,
-                department: document.getElementById("createDept").value,
-                person_in_charge: document.getElementById("createPerson").value,
-                status: document.getElementById("createStatus").value
-            })
-        });
-
-        if (!response.ok) throw new Error("Failed to create job");
-        
-        closeCreateModal();
-        const jobs = await fetchJobs(); // Refresh the list
-        renderJobs(jobs);
-    } catch (error) {
-        console.error("Error creating job:", error);
-        alert("Failed to create job. Please check console for details.");
-    }
-}
-    
-        // Initialize
-        window.onload = async function() {
-            const jobs = await fetchJobs();
-            renderJobs(jobs);
-        };
-    </script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -191,9 +22,10 @@ async function createJob() {
             margin-bottom: 20px;
             display: flex;
             gap: 15px;
+            flex-wrap: wrap;
             align-items: center;
         }
-        select, button {
+        select, button, input {
             padding: 8px 12px;
             border-radius: 4px;
             border: 1px solid #ddd;
@@ -203,9 +35,14 @@ async function createJob() {
             color: white;
             border: none;
             cursor: pointer;
+            transition: background 0.2s;
         }
         button:hover {
             background: #2980b9;
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
         }
         table {
             width: 100%;
@@ -222,6 +59,10 @@ async function createJob() {
             background: #3498db;
             color: white;
             cursor: pointer;
+            position: relative;
+        }
+        th:hover {
+            background: #2980b9;
         }
         tr:nth-child(even) {
             background-color: #f2f2f2;
@@ -229,8 +70,6 @@ async function createJob() {
         tr:hover {
             background-color: #e9e9e9;
         }
-        
-        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -246,6 +85,7 @@ async function createJob() {
             margin: 10% auto;
             padding: 20px;
             width: 50%;
+            max-width: 600px;
             border-radius: 5px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
@@ -259,111 +99,372 @@ async function createJob() {
         .close:hover {
             color: black;
         }
-        #editForm label {
-            display: block;
-            margin: 10px 0;
+        .search-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-grow: 1;
+            max-width: 600px;
         }
-        #editForm input, #editForm select {
-            width: 100%;
+        #searchInput {
             padding: 8px;
-            margin-top: 5px;
-            box-sizing: border-box;
-        }
-
-        /* Style the Add New Job button */
-        .controls button {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 15px;
             border-radius: 4px;
-            cursor: pointer;
+            border: 1px solid #ddd;
+            flex-grow: 1;
+            min-width: 150px;
         }
-
-        .controls button:hover {
-            background: #218838;
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
         }
-
-        /* Form textarea */
-        textarea {
-            width: 100%;
-            min-height: 80px;
-            padding: 8px;
-            box-sizing: border-box;
-            margin-top: 5px;
-            font-family: inherit;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-
-        /* Date input */
-        input[type="date"] {
-            padding: 7px;
+        .sort-indicator {
+            margin-left: 5px;
         }
     </style>
 </head>
-<!-- Edit Modal -->
-<div id="editModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal()">&times;</span>
-        <h2>Edit Job</h2>
-        <form id="editForm">
-            <input type="hidden" id="editId">
-            <label>Name: <input type="text" id="editName" required></label>
-            <label>Job Num: <input type="text" id="editJobNum" required></label>
-            <label>Status: 
-                <select id="editStatus" required>
-                    <option value="designing">Designing</option>
-                    <option value="in progress">In Progress</option>
-                    <option value="waiting on approval">Waiting Approval</option>
-                </select>
-            </label>
-            <label>Created At: <span id="editCreatedAt">N/A</span></label>
-            <button type="button" onclick="saveJob()">Save</button>
-        </form>
-    </div>
-</div>
-
-<!-- Create Job Modal -->
-<div id="createModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeCreateModal()">&times;</span>
-        <h2>Create New Job</h2>
-        <form id="createForm">
-            <label>Name: <input type="text" id="createName" required></label>
-            <label>Job Number: <input type="text" id="createJobNum" required></label>
-            <label>Quantity: <input type="number" id="createQty" required></label>
-            <label>Details: <textarea id="createDetails"></textarea></label>
-            <label>Due Date: <input type="date" id="createDueDate"></label>
-            <label>Department: 
-                <select id="createDept">
-                    <option value="digital Print">Digital Print</option>
-                    <option value="screen">Screen</option>
-                    <option value="production">Production</option>
-                </select>
-            </label>
-            <label>Person in Charge: <input type="text" id="createPerson"></label>
-            <label>Status: 
-                <select id="createStatus">
-                    <option value="designing">Designing</option>
-                    <option value="in progress">In Progress</option>
-                    <option value="waiting on approval">Waiting Approval</option>
-                </select>
-            </label>
-            <button type="button" onclick="createJob()">Create Job</button>
-        </form>
-    </div>
-</div>
 <body>
     <h1>Job Tracker</h1>
-    <!-- ADD THIS FILTER CONTROL -->
     <div class="controls">
         <label for="statusFilter">Filter by Status:</label>
         <select id="statusFilter" onchange="filterJobs()">
             <option value="all">All Statuses</option>
             <option value="designing">Designing</option>
             <option value="in progress">In Progress</option>
-            <option value="waiting on approval">Waiting on Approval</option>
+            <option value="waiting on approval">Waiting Approval</option>
         </select>
+
+        <div class="search-container">
+            <span>Search by:</span>
+            <select id="searchColumn">
+                <option value="name">Name</option>
+                <option value="job_num">Job Number</option>
+                <option value="department">Department</option>
+                <option value="person_in_charge">Person</option>
+                <option value="status">Status</option>
+            </select>
+            <input type="text" id="searchInput" placeholder="Enter search term...">
+            <button id="searchButton" onclick="searchJobs()">Search</button>
+        </div>
+
+        <button onclick="openCreateModal()">Create New Job</button>
     </div>
-    <table border="1" id="jobTable"></table>
+    <table id="jobTable">
+        <tr>
+            <th onclick="sortJobs('id')">ID <span class="sort-indicator">↕</span></th>
+            <th onclick="sortJobs('name')">Name <span class="sort-indicator">↕</span></th>
+            <th onclick="sortJobs('job_num')">Job Num <span class="sort-indicator">↕</span></th>
+            <th onclick="sortJobs('qty')">Qty <span class="sort-indicator">↕</span></th>
+            <th onclick="sortJobs('details_of_job')">Details <span class="sort-indicator">↕</span></th>
+            <th onclick="sortJobs('due_date')">Due Date <span class="sort-indicator">↕</span></th>
+            <th onclick="sortJobs('department')">Department <span class="sort-indicator">↕</span></th>
+            <th onclick="sortJobs('person_in_charge')">Person <span class="sort-indicator">↕</span></th>
+            <th onclick="sortJobs('status')">Status <span class="sort-indicator">↕</span></th>
+            <th onclick="sortJobs('created_at')">Created At <span class="sort-indicator">↕</span></th>
+            <th>Actions</th>
+        </tr>
+    </table>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Edit Job</h2>
+            <form id="editForm">
+                <input type="hidden" id="editId">
+                <label>Name: <input type="text" id="editName" required></label>
+                <label>Job Num: <input type="text" id="editJobNum" required></label>
+                <label>Status: 
+                    <select id="editStatus" required>
+                        <option value="designing">Designing</option>
+                        <option value="in progress">In Progress</option>
+                        <option value="waiting on approval">Waiting Approval</option>
+                    </select>
+                </label>
+                <label>Created At: <span id="editCreatedAt">N/A</span></label>
+                <button type="button" onclick="saveJob()">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Modal -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCreateModal()">&times;</span>
+            <h2>Create New Job</h2>
+            <form id="createForm">
+                <label>Name: <input type="text" id="createName" required></label>
+                <label>Job Num: <input type="text" id="createJobNum" required></label>
+                <label>Qty: <input type="number" id="createQty" required min="1"></label>
+                <label>Details: <textarea id="createDetails"></textarea></label>
+                <label>Due Date: <input type="date" id="createDueDate"></label>
+                <label>Department: 
+                    <select id="createDepartment" required>
+                        <option value="digital Print">Digital Print</option>
+                        <option value="Production">Production</option>
+                        <option value="screen">Screen</option>
+                    </select>
+                </label>
+                <label>Person in Charge: <input type="text" id="createPerson"></label>
+                <label>Status: 
+                    <select id="createStatus" required>
+                        <option value="designing">Designing</option>
+                        <option value="in progress">In Progress</option>
+                        <option value="waiting on approval">Waiting Approval</option>
+                    </select>
+                </label>
+                <button type="button" onclick="createJob()">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Cache DOM elements
+        const elements = {
+            table: document.getElementById("jobTable"),
+            searchInput: document.getElementById("searchInput"),
+            searchColumn: document.getElementById("searchColumn"),
+            searchButton: document.getElementById("searchButton"),
+            statusFilter: document.getElementById("statusFilter"),
+            editModal: document.getElementById("editModal"),
+            createModal: document.getElementById("createModal")
+        };
+
+        // State management
+        let currentState = {
+            sortColumn: null,
+            sortDirection: 'asc',
+            isLoading: false
+        };
+
+        // Main fetch function with error handling
+        async function fetchJobs(url = "/jobs") {
+            try {
+                setLoading(true);
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error("Failed to fetch jobs:", error);
+                showError("Failed to load jobs. Please try again.");
+                return [];
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Loading state management
+        function setLoading(isLoading) {
+            currentState.isLoading = isLoading;
+            elements.searchButton.disabled = isLoading;
+            if (isLoading) {
+                elements.searchButton.innerHTML = 'Searching <span class="loading"></span>';
+            } else {
+                elements.searchButton.textContent = 'Search';
+            }
+        }
+
+        // Error display
+        function showError(message) {
+            elements.table.innerHTML = `<tr><td colspan="11" style="color: red; text-align: center;">${message}</td></tr>`;
+        }
+
+        // Filter function
+        async function filterJobs() {
+            const status = elements.statusFilter.value;
+            const url = status === "all" ? "/jobs" : `/jobs?status=${status}`;
+            const jobs = await fetchJobs(url);
+            renderJobs(jobs);
+        }
+
+        // Search function with debouncing
+        let searchDebounce;
+        elements.searchInput.addEventListener("input", function() {
+            clearTimeout(searchDebounce);
+            searchDebounce = setTimeout(() => {
+                const term = this.value.trim();
+                if (term.length >= 2 || term.length === 0) {
+                    searchJobs();
+                }
+            }, 300);
+        });
+
+        async function searchJobs() {
+            const term = elements.searchInput.value.trim();
+            if (!term) {
+                const jobs = await fetchJobs();
+                renderJobs(jobs);
+                return;
+            }
+
+            const column = elements.searchColumn.value;
+            const jobs = await fetchJobs(`/jobs/search?column=${column}&term=${encodeURIComponent(term)}`);
+            renderJobs(jobs);
+        }
+
+        // Render function with optimized DOM updates
+        function renderJobs(jobs) {
+            if (!jobs || jobs.length === 0) {
+                elements.table.innerHTML = `<tr><td colspan="11" style="text-align: center;">No jobs found</td></tr>`;
+                return;
+            }
+
+            let tableHTML = `
+                <tr>
+                    <th onclick="sortJobs('id')">ID ${getSortIndicator('id')}</th>
+                    <th onclick="sortJobs('name')">Name ${getSortIndicator('name')}</th>
+                    <th onclick="sortJobs('job_num')">Job Num ${getSortIndicator('job_num')}</th>
+                    <th onclick="sortJobs('qty')">Qty ${getSortIndicator('qty')}</th>
+                    <th onclick="sortJobs('details_of_job')">Details ${getSortIndicator('details_of_job')}</th>
+                    <th onclick="sortJobs('due_date')">Due Date ${getSortIndicator('due_date')}</th>
+                    <th onclick="sortJobs('department')">Department ${getSortIndicator('department')}</th>
+                    <th onclick="sortJobs('person_in_charge')">Person ${getSortIndicator('person_in_charge')}</th>
+                    <th onclick="sortJobs('status')">Status ${getSortIndicator('status')}</th>
+                    <th onclick="sortJobs('created_at')">Created At ${getSortIndicator('created_at')}</th>
+                    <th>Actions</th>
+                </tr>`;
+            
+            jobs.forEach(job => {
+                tableHTML += `
+                    <tr>
+                        <td>${job.id}</td>
+                        <td>${job.name}</td>
+                        <td>${job.job_num}</td>
+                        <td>${job.qty}</td>
+                        <td>${job.details_of_job || 'N/A'}</td>
+                        <td>${job.due_date || 'N/A'}</td>
+                        <td>${job.department}</td>
+                        <td>${job.person_in_charge || 'N/A'}</td>
+                        <td>${job.status}</td>
+                        <td>${job.created_at || 'N/A'}</td>
+                        <td><button onclick="openEditModal(${JSON.stringify(job).replace(/"/g, '&quot;')})">Edit</button></td>
+                    </tr>`;
+            });
+            
+            elements.table.innerHTML = tableHTML;
+        }
+
+        // Sorting function
+        async function sortJobs(column) {
+            if (currentState.sortColumn === column) {
+                currentState.sortDirection = currentState.sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentState.sortColumn = column;
+                currentState.sortDirection = 'asc';
+            }
+            
+            const jobs = await fetchJobs(`/jobs?sort=${column}&order=${currentState.sortDirection}`);
+            renderJobs(jobs);
+        }
+
+        function getSortIndicator(column) {
+            if (currentState.sortColumn === column) {
+                return currentState.sortDirection === 'asc' ? '↑' : '↓';
+            }
+            return '↕';
+        }
+
+        // Modal functions
+        function openEditModal(job) {
+            document.getElementById("editId").value = job.id;
+            document.getElementById("editName").value = job.name;
+            document.getElementById("editJobNum").value = job.job_num;
+            document.getElementById("editStatus").value = job.status;
+            document.getElementById("editCreatedAt").textContent = job.created_at || "N/A";
+            elements.editModal.style.display = "block";
+        }
+
+        function closeModal() {
+            elements.editModal.style.display = "none";
+        }
+
+        function openCreateModal() {
+            elements.createModal.style.display = "block";
+        }
+
+        function closeCreateModal() {
+            elements.createModal.style.display = "none";
+        }
+
+        // Save job function
+        async function saveJob() {
+            const jobId = document.getElementById("editId").value;
+            try {
+                setLoading(true);
+                const response = await fetch(`/jobs/${jobId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: document.getElementById("editName").value,
+                        job_num: document.getElementById("editJobNum").value,
+                        status: document.getElementById("editStatus").value
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to update job');
+                
+                closeModal();
+                const jobs = await fetchJobs();
+                renderJobs(jobs);
+            } catch (error) {
+                console.error("Error saving job:", error);
+                alert(`Error: ${error.message}`);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Create job function
+        async function createJob() {
+            try {
+                setLoading(true);
+                const response = await fetch("/jobs", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name: document.getElementById("createName").value,
+                        job_num: document.getElementById("createJobNum").value,
+                        qty: parseInt(document.getElementById("createQty").value),
+                        details_of_job: document.getElementById("createDetails").value,
+                        due_date: document.getElementById("createDueDate").value || null,
+                        department: document.getElementById("createDepartment").value,
+                        person_in_charge: document.getElementById("createPerson").value,
+                        status: document.getElementById("createStatus").value
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to create job');
+                
+                closeCreateModal();
+                const jobs = await fetchJobs();
+                renderJobs(jobs);
+            } catch (error) {
+                console.error("Error creating job:", error);
+                alert(`Error: ${error.message}`);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Initialize
+        window.onload = async function() {
+            const jobs = await fetchJobs();
+            renderJobs(jobs);
+            
+            // Close modals when clicking outside
+            window.addEventListener('click', (event) => {
+                if (event.target === elements.editModal) closeModal();
+                if (event.target === elements.createModal) closeCreateModal();
+            });
+        };
+    </script>
 </body>
 </html>

@@ -1,26 +1,34 @@
-# server.py
 from flask import Flask, jsonify, request, send_from_directory
-import psycopg2
+from psycopg2.pool import SimpleConnectionPool
 import os
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 
-# Replace these with your Render PostgreSQL credentials
+# Database configuration - Move these to environment variables in production
 DB_NAME = "dbc_jtdb"
 DB_USER = "dbc_jtdb_user"
 DB_PASSWORD = "eBH1D0XF5oAMNt1cuU5sXyob9YzivI0m"
 DB_HOST = "dpg-cvd9jlhu0jms739lbnug-a.oregon-postgres.render.com"
 DB_PORT = 5432
 
-def connect_db():
-    return psycopg2.connect(
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=DB_PORT,
-        sslmode="require"
-    )
+# Connection pool setup
+pool = SimpleConnectionPool(
+    minconn=1,
+    maxconn=20,
+    dbname=DB_NAME,
+    user=DB_USER,
+    password=DB_PASSWORD,
+    host=DB_HOST,
+    port=DB_PORT,
+    sslmode="require"
+)
+
+def get_db_connection():
+    return pool.getconn()
+
+def return_db_connection(conn):
+    pool.putconn(conn)
 
 @app.route('/')
 def serve_frontend():
@@ -32,117 +40,83 @@ def get_jobs():
     sort_column = request.args.get('sort')
     sort_order = request.args.get('order', 'asc')
     
-    conn = connect_db()
-    cursor = conn.cursor()
-    
-    # Base query
-    query = "SELECT * FROM jobs"
-    
-    # Add WHERE clause if filtering
-    if status and status != "all":
-        query += f" WHERE status = '{status}'"
-    
-    # Add ORDER BY if sorting
-    valid_columns = ['id', 'name', 'job_num', 'qty', 'details_of_job', 
-                    'due_date', 'department', 'person_in_charge', 'status', 'created_at']
-    if sort_column in valid_columns:
-        query += f" ORDER BY {sort_column} {sort_order}"
-    
-    cursor.execute(query)
-    jobs = cursor.fetchall()
-    conn.close()
-    
-    # Format dates properly
-    job_list = [{
-        "id": j[0],
-        "name": j[1],
-        "job_num": j[2],
-        "qty": j[3],
-        "details_of_job": j[4],
-        "due_date": j[5].strftime('%Y-%m-%d') if j[5] else None,
-        "department": j[6],
-        "person_in_charge": j[7],
-        "status": j[8],
-        "created_at": j[9].strftime('%Y-%m-%d %H:%M:%S') if j[9] else None
-    } for j in jobs]
-    
-    return jsonify(job_list)
-
-
-@app.route('/jobs/<int:job_id>', methods=['PUT'])
-def update_job(job_id):
-    data = request.json
-    conn = connect_db()
-    cursor = conn.cursor()
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
-        cursor.execute("""
-            UPDATE jobs 
-            SET name = %s, job_num = %s, status = %s
-            WHERE id = %s
-            RETURNING *;
-        """, (data['name'], data['job_num'], data['status'], job_id))
+        query = "SELECT * FROM jobs"
+        params = []
         
-        updated_job = cursor.fetchone()
-        conn.commit()
+        if status and status != "all":
+            query += " WHERE status = %s"
+            params.append(status)
         
-        return jsonify({
-            "id": updated_job[0],
-            "name": updated_job[1],
-            "job_num": updated_job[2],
-            "status": updated_job[8],
-            "created_at": updated_job[9].strftime('%Y-%m-%d %H:%M:%S') if updated_job[9] else None
-        })
+        if sort_column in ['id', 'name', 'job_num', 'qty', 'details_of_job', 'due_date', 'department', 'person_in_charge', 'status', 'created_at']:
+            query += f" ORDER BY {sort_column} {sort_order}"
         
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"error": str(e)}), 400
+        cursor.execute(query, params)
+        jobs = cursor.fetchall()
+        
+        # Format dates
+        for job in jobs:
+            if job['due_date']:
+                job['due_date'] = job['due_date'].strftime('%Y-%m-%d')
+            if job['created_at']:
+                job['created_at'] = job['created_at'].strftime('%Y-%m-%d %H:%M')
+        
+        return jsonify(jobs)
         
     finally:
-        conn.close()
+        cursor.close()
+        return_db_connection(conn)
 
-
-@app.route('/jobs', methods=['POST'])
-def add_job():
-    data = request.json
-    conn = connect_db()
-    cursor = conn.cursor()
+@app.route('/jobs/search', methods=['GET'])
+def search_jobs():
+    column = request.args.get('column')
+    term = request.args.get('term')
+    
+    if not column or not term:
+        return jsonify({"error": "Missing search parameters"}), 400
+    
+    valid_columns = ['name', 'job_num', 'department', 'person_in_charge', 'status']
+    if column not in valid_columns:
+        return jsonify({"error": "Invalid search column"}), 400
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
-        cursor.execute("""
-            INSERT INTO jobs (
-                name, job_num, qty, details_of_job, 
-                due_date, department, person_in_charge, status
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING *;
-        """, (
-            data['name'],
-            data['job_num'],
-            data['qty'],
-            data['details_of_job'],
-            data['due_date'],
-            data['department'],
-            data['person_in_charge'],
-            data['status']
-        ))
+        query = f"SELECT * FROM jobs WHERE {column} ILIKE %s"
+        cursor.execute(query, (f'%{term}%',))
+        jobs = cursor.fetchall()
         
-        new_job = cursor.fetchone()
-        conn.commit()
+        for job in jobs:
+            if job['due_date']:
+                job['due_date'] = job['due_date'].strftime('%Y-%m-%d')
+            if job['created_at']:
+                job['created_at'] = job['created_at'].strftime('%Y-%m-%d %H:%M')
         
-        return jsonify({
-            "id": new_job[0],
-            "name": new_job[1],
-            "job_num": new_job[2],
-            "status": new_job[8],
-            "created_at": new_job[9].strftime('%Y-%m-%d %H:%M:%S') if new_job[9] else None
-        }), 201
-        
-    except Exception as e:
-        conn.rollback()
-        return jsonify({"error": str(e)}), 400
+        return jsonify(jobs)
         
     finally:
-        conn.close()
+        cursor.close()
+        return_db_connection(conn)
+
+# ... [Keep your other routes (PUT, POST) with similar connection pool changes] ...
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Create database indexes on startup
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+                CREATE INDEX IF NOT EXISTS idx_jobs_name ON jobs(name);
+                CREATE INDEX IF NOT EXISTS idx_jobs_job_num ON jobs(job_num);
+            """)
+        conn.commit()
+    finally:
+        return_db_connection(conn)
+    
+    app.run(debug=False)  # Disable debug mode for production
+    
