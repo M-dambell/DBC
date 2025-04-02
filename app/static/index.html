@@ -129,6 +129,17 @@
         .sort-indicator {
             margin-left: 5px;
         }
+        .date-filter {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .date-filter input[type="date"] {
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
@@ -154,6 +165,13 @@
             <input type="text" id="searchInput" placeholder="Enter search term...">
             <button id="searchButton" onclick="searchJobs()">Search</button>
         </div>
+       
+        <div class="date-filter">
+            <label>From: <input type="date" id="startDate"></label>
+            <label>To: <input type="date" id="endDate"></label>
+            <button onclick="filterByDate()">Filter Dates</button>
+        </div>
+        
 
         <button onclick="openCreateModal()">Create New Job</button>
     </div>
@@ -420,6 +438,31 @@
             } finally {
                 setLoading(false);
             }
+        }
+
+
+        async function filterByDate() {
+            const start = document.getElementById("startDate").value;
+            const end = document.getElementById("endDate").value;
+
+            if (start && end && start > end) {
+                alert("End date cannot be before start date");
+                return;
+            }
+            
+            if (!start && !end) {
+                // If no dates selected, show all jobs
+                const jobs = await fetchJobs();
+                renderJobs(jobs);
+                return;
+            }
+
+            let url = "/jobs/filter-by-date?";
+            if (start) url += `start=${start}`;
+            if (end) url += `${start ? '&' : ''}end=${end}`;
+            
+            const jobs = await fetchJobs(url);
+            renderJobs(jobs);
         }
 
         // Create job function

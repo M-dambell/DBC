@@ -70,6 +70,7 @@ def get_jobs():
         cursor.close()
         return_db_connection(conn)
 
+# SEARCH - Find jobs
 @app.route('/jobs/search', methods=['GET'])
 def search_jobs():
     column = request.args.get('column')
@@ -102,7 +103,74 @@ def search_jobs():
         cursor.close()
         return_db_connection(conn)
 
-# ... [Keep your other routes (PUT, POST) with similar connection pool changes] ...
+# UPDATE - Edit job
+@app.route('/jobs/<int:job_id>', methods=['PUT'])
+def update_job(job_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        data = request.get_json()
+        
+        cursor.execute("""
+            UPDATE jobs 
+            SET name = %s, job_num = %s, status = %s
+            WHERE id = %s
+            RETURNING *
+        """, (data['name'], data['job_num'], data['status'], job_id))
+        
+        updated_job = cursor.fetchone()
+        conn.commit()
+        
+        # Format dates
+        updated_job['due_date'] = updated_job['due_date'].strftime('%Y-%m-%d') if updated_job['due_date'] else None
+        updated_job['created_at'] = updated_job['created_at'].strftime('%Y-%m-%d %H:%M:%S') if updated_job['created_at'] else None
+        
+        return jsonify(updated_job)
+        
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": str(e)}), 400
+    finally:
+        cursor.close()
+        return_db_connection(conn)
+
+
+@app.route('/jobs/filter-by-date', methods=['GET'])
+def filter_jobs_by_date():
+    start_date = request.args.get('start')
+    end_date = request.args.get('end')
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        query = "SELECT * FROM jobs WHERE TRUE"
+        params = []
+        
+        if start_date:
+            query += " AND created_at >= %s"
+            params.append(start_date)
+        if end_date:
+            query += " AND created_at <= %s"
+            params.append(end_date + " 23:59:59")  # Include entire end day
+        
+        cursor.execute(query, params)
+        jobs = cursor.fetchall()
+        
+        # Format dates
+        for job in jobs:
+            if job['due_date']:
+                job['due_date'] = job['due_date'].strftime('%Y-%m-%d')
+            if job['created_at']:
+                job['created_at'] = job['created_at'].strftime('%Y-%m-%d %H:%M')
+        
+        return jsonify(jobs)
+        
+    finally:
+        cursor.close()
+        return_db_connection(conn)
+
 
 if __name__ == '__main__':
     # Create database indexes on startup
