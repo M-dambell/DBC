@@ -7,14 +7,92 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 20px;
+            margin: 0;
+            padding: 0;
             color: #333;
+            background-color: #f5f5f5;
         }
-        h1 {
-            color: #2c3e50;
-            border-bottom: 2px solid #3498db;
+
+        /* Auth UI Styles */
+        .auth-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .auth-tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .auth-tab.active {
+            border-bottom: 3px solid #3498db;
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .auth-form input, .auth-form select {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .auth-form button {
+            padding: 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .auth-form button:hover {
+            background: #2980b9;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        /* Main App Styles */
+        #app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
             padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
         }
+
         .controls {
             background: #f8f9fa;
             padding: 15px;
@@ -25,11 +103,13 @@
             flex-wrap: wrap;
             align-items: center;
         }
+
         select, button, input {
             padding: 8px 12px;
             border-radius: 4px;
             border: 1px solid #ddd;
         }
+
         button {
             background: #3498db;
             color: white;
@@ -37,49 +117,92 @@
             cursor: pointer;
             transition: background 0.2s;
         }
+
         button:hover {
             background: #2980b9;
         }
-        button:disabled {
-            background: #95a5a6;
-            cursor: not-allowed;
+
+        button.danger {
+            background: #e74c3c;
         }
+
+        button.danger:hover {
+            background: #c0392b;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
             box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+            background: white;
         }
+
         th, td {
             padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
+
         th {
             background: #3498db;
             color: white;
-            cursor: pointer;
             position: relative;
         }
-        th:hover {
-            background: #2980b9;
-        }
+
         tr:nth-child(even) {
             background-color: #f2f2f2;
         }
+
+        /* Add this to your table styles */
+        td {
+            white-space: nowrap; /* Prevent cell content from wrapping */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px; /* Adjust as needed */
+        }
+
+        /* Specifically for status column */
+        td:nth-child(9) { /* Assuming status is 9th column */
+            width: 120px; /* Fixed width for status column */
+            min-width: 120px;
+        }
+
         tr:hover {
             background-color: #e9e9e9;
         }
+
+        .status-badge {
+            position: relative;
+        }
+
+        .status-badge:hover::after {
+            content: attr(data-status);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 100;
+            margin-bottom: 5px;
+        }
+        
         .modal {
             display: none;
             position: fixed;
-            z-index: 1;
+            z-index: 100;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
             background-color: rgba(0,0,0,0.4);
         }
+
         .modal-content {
             background-color: white;
             margin: 10% auto;
@@ -89,6 +212,7 @@
             border-radius: 5px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
+
         .close {
             color: #aaa;
             float: right;
@@ -96,23 +220,7 @@
             font-weight: bold;
             cursor: pointer;
         }
-        .close:hover {
-            color: black;
-        }
-        .search-container {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-grow: 1;
-            max-width: 600px;
-        }
-        #searchInput {
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-            flex-grow: 1;
-            min-width: 150px;
-        }
+
         .loading {
             display: inline-block;
             width: 20px;
@@ -123,187 +231,454 @@
             animation: spin 1s ease-in-out infinite;
             margin-left: 10px;
         }
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        .sort-indicator {
-            margin-left: 5px;
-        }
-        .date-filter {
-            display: flex;
-            gap: 10px;
-            align-items: center;
+
+        .hidden {
+            display: none;
         }
 
-        .date-filter input[type="date"] {
-            padding: 6px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
+        .admin-only {
+            display: none;
+        }
+
+        .user-role {
+            margin-left: auto;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        th {
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th:hover {
+            background-color: #2980b9;
+        }
+
+        .sort-indicator {
+            margin-left: 5px;
+            font-size: 12px;
+            position: absolute;
+            right: 5px;
+        }
+
+        /* Add this to your existing status-badge styles */
+        .status-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: capitalize;
+            white-space: nowrap; /* Prevent text wrapping */
+            display: inline-block; /* Better control over width */
+            max-width: 150px; /* Set a reasonable max width */
+            overflow: hidden;
+            text-overflow: ellipsis; /* Add ... if text is too long */
+        }
+
+        .status-designing {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .status-in-progress {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .status-waiting-on-approval {
+            background-color: #9b59b6;
+            color: white;
+        }
+
+        .status-done {
+            background-color: #2ecc71;
+            color: white;
         }
     </style>
 </head>
 <body>
-    <h1>Job Tracker</h1>
-    <div class="controls">
-        <label for="statusFilter">Filter by Status:</label>
-        <select id="statusFilter" onchange="filterJobs()">
-            <option value="all">All Statuses</option>
-            <option value="designing">Designing</option>
-            <option value="in progress">In Progress</option>
-            <option value="waiting on approval">Waiting Approval</option>
-        </select>
-
-        <div class="search-container">
-            <span>Search by:</span>
-            <select id="searchColumn">
-                <option value="name">Name</option>
-                <option value="job_num">Job Number</option>
-                <option value="department">Department</option>
-                <option value="person_in_charge">Person</option>
-                <option value="status">Status</option>
-            </select>
-            <input type="text" id="searchInput" placeholder="Enter search term...">
-            <button id="searchButton" onclick="searchJobs()">Search</button>
-        </div>
-       
-        <div class="date-filter">
-            <label>From: <input type="date" id="startDate"></label>
-            <label>To: <input type="date" id="endDate"></label>
-            <button onclick="filterByDate()">Filter Dates</button>
+    <!-- Authentication UI -->
+    <div id="auth-container" class="auth-container">
+        <div class="auth-tabs">
+            <div class="auth-tab active" onclick="showTab('login')">Login</div>
+            <div class="auth-tab" onclick="showTab('register')">Register</div>
         </div>
         
-
-        <button onclick="openCreateModal()">Create New Job</button>
+        <!-- Login Form -->
+        <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
+            <input type="text" id="login-username" placeholder="Username" required>
+            <input type="password" id="login-password" placeholder="Password" required>
+            <div id="login-error" class="error-message"></div>
+            <button type="submit">Login</button>
+        </form>
+        
+        <!-- Registration Form -->
+        <form id="register-form" class="auth-form hidden" onsubmit="handleRegister(event)">
+            <input type="text" id="reg-username" placeholder="Username" required>
+            <input type="password" id="reg-password" placeholder="Password" required>
+            <select id="reg-role" required>
+                <option value="user">Regular User</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
+            </select>
+            <div id="register-error" class="error-message"></div>
+            <button type="submit">Register</button>
+        </form>
     </div>
-    <table id="jobTable">
-        <tr>
-            <th onclick="sortJobs('id')">ID <span class="sort-indicator">↕</span></th>
-            <th onclick="sortJobs('name')">Name <span class="sort-indicator">↕</span></th>
-            <th onclick="sortJobs('job_num')">Job Num <span class="sort-indicator">↕</span></th>
-            <th onclick="sortJobs('qty')">Qty <span class="sort-indicator">↕</span></th>
-            <th onclick="sortJobs('details_of_job')">Details <span class="sort-indicator">↕</span></th>
-            <th onclick="sortJobs('due_date')">Due Date <span class="sort-indicator">↕</span></th>
-            <th onclick="sortJobs('department')">Department <span class="sort-indicator">↕</span></th>
-            <th onclick="sortJobs('person_in_charge')">Person <span class="sort-indicator">↕</span></th>
-            <th onclick="sortJobs('status')">Status <span class="sort-indicator">↕</span></th>
-            <th onclick="sortJobs('created_at')">Created At <span class="sort-indicator">↕</span></th>
-            <th>Actions</th>
-        </tr>
-    </table>
 
-    <!-- Edit Modal -->
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal()">&times;</span>
-            <h2>Edit Job</h2>
-            <form id="editForm">
-                <input type="hidden" id="editId">
-                <label>Name: <input type="text" id="editName" required></label>
-                <label>Job Num: <input type="text" id="editJobNum" required></label>
-                <label>Status: 
-                    <select id="editStatus" required>
-                        <option value="designing">Designing</option>
-                        <option value="in progress">In Progress</option>
-                        <option value="waiting on approval">Waiting Approval</option>
-                    </select>
-                </label>
-                <label>Created At: <span id="editCreatedAt">N/A</span></label>
-                <button type="button" onclick="saveJob()">Save</button>
-            </form>
+    <!-- Main App UI -->
+    <div id="app-container" class="hidden">
+        <div class="header">
+            <h1>Job Tracker</h1>
+            <div class="user-role" id="current-user-role"></div>
+            <button onclick="logout()" class="danger">Logout</button>
         </div>
-    </div>
 
-    <!-- Create Modal -->
-    <div id="createModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeCreateModal()">&times;</span>
-            <h2>Create New Job</h2>
-            <form id="createForm">
-                <label>Name: <input type="text" id="createName" required></label>
-                <label>Job Num: <input type="text" id="createJobNum" required></label>
-                <label>Qty: <input type="number" id="createQty" required min="1"></label>
-                <label>Details: <textarea id="createDetails"></textarea></label>
-                <label>Due Date: <input type="date" id="createDueDate"></label>
-                <label>Department: 
-                    <select id="createDepartment" required>
-                        <option value="digital Print">Digital Print</option>
-                        <option value="Production">Production</option>
-                        <option value="screen">Screen</option>
-                    </select>
-                </label>
-                <label>Person in Charge: <input type="text" id="createPerson"></label>
-                <label>Status: 
-                    <select id="createStatus" required>
-                        <option value="designing">Designing</option>
-                        <option value="in progress">In Progress</option>
-                        <option value="waiting on approval">Waiting Approval</option>
-                    </select>
-                </label>
-                <button type="button" onclick="createJob()">Save</button>
-            </form>
+        <div class="controls">
+            <label for="statusFilter">Filter by Status:</label>
+            <select id="statusFilter" onchange="filterJobs()">
+                <option value="all">All Statuses</option>
+                <option value="designing">Designing</option>
+                <option value="in progress">In Progress</option>
+                <option value="waiting on approval">Waiting Approval</option>
+                <option value="done">Done</option>
+            </select>
+
+            <div class="search-container">
+                <span>Search by:</span>
+                <select id="searchColumn">
+                    <option value="name">Name</option>
+                    <option value="job_num">Job Number</option>
+                    <option value="department">Department</option>
+                    <option value="person_in_charge">Person</option>
+                    <option value="status">Status</option>
+                </select>
+                <input type="text" id="searchInput" placeholder="Enter search term...">
+                <button id="searchButton" onclick="searchJobs()">Search</button>
+            </div>
+           
+            <div class="date-filter">
+                <label>From: <input type="date" id="startDate"></label>
+                <label>To: <input type="date" id="endDate"></label>
+                <button onclick="filterByDate()">Filter Dates</button>
+            </div>
+            
+            <button onclick="openCreateModal()">Create New Job</button>
+            <button class="admin-only" onclick="adminFunction()">Admin Panel</button>
+        </div>
+
+        <table id="jobTable">
+            <thead>
+                <tr>
+                    <th onclick="sortJobs('id')">ID <span class="sort-indicator">↕</span></th>
+                    <th onclick="sortJobs('name')">Name <span class="sort-indicator">↕</span></th>
+                    <th onclick="sortJobs('job_num')">Job Num <span class="sort-indicator">↕</span></th>
+                    <th onclick="sortJobs('qty')">Qty <span class="sort-indicator">↕</span></th>
+                    <th onclick="sortJobs('details_of_job')">Details <span class="sort-indicator">↕</span></th>
+                    <th onclick="sortJobs('due_date')">Due Date <span class="sort-indicator">↕</span></th>
+                    <th onclick="sortJobs('department')">Department <span class="sort-indicator">↕</span></th>
+                    <th onclick="sortJobs('person_in_charge')">Person <span class="sort-indicator">↕</span></th>
+                    <th onclick="sortJobs('status')">Status <span class="sort-indicator">↕</span></th>
+                    <th onclick="sortJobs('created_at')">Created At <span class="sort-indicator">↕</span></th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Jobs will be inserted here dynamically -->
+            </tbody>
+        </table>
+
+        <!-- Edit Modal -->
+        <div id="editModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2>Edit Job</h2>
+                <form id="editForm">
+                    <input type="hidden" id="editId">
+                    <label>Name: <input type="text" id="editName" required></label>
+                    <label>Job Num: <input type="text" id="editJobNum" required></label>
+                    <label>Status: 
+                        <select id="editStatus" required>
+                            <option value="designing">Designing</option>
+                            <option value="in progress">In Progress</option>
+                            <option value="waiting on approval">Waiting Approval</option>
+                            <option value="done">Done</option>
+                        </select>
+                    </label>
+                    <label>Created At: <span id="editCreatedAt">N/A</span></label>
+                    <button type="button" onclick="saveJob()">Save</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Create Modal -->
+        <div id="createModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeCreateModal()">&times;</span>
+                <h2>Create New Job</h2>
+                <form id="createForm">
+                    <label>Name: <input type="text" id="createName" required></label>
+                    <label>Job Num: <input type="text" id="createJobNum" required></label>
+                    <label>Qty: <input type="number" id="createQty" required min="1"></label>
+                    <label>Details: <textarea id="createDetails"></textarea></label>
+                    <label>Due Date: <input type="date" id="createDueDate"></label>
+                    <label>Department: 
+                        <select id="createStatus" required>
+                            <option value="designing">Designing</option>
+                            <option value="in progress">In Progress</option>
+                            <option value="waiting on approval">Waiting Approval</option>
+                            <option value="done">Done</option>
+                        </select>
+                    </label>
+                    <label>Person in Charge: <input type="text" id="createPerson"></label>
+                    <label>Status: 
+                        <select id="createStatus" required>
+                            <option value="designing">Designing</option>
+                            <option value="in progress">In Progress</option>
+                            <option value="waiting on approval">Waiting Approval</option>
+                        </select>
+                    </label>
+                    <button type="button" onclick="createJob()">Save</button>
+                </form>
+            </div>
         </div>
     </div>
 
     <script>
-        // Cache DOM elements
-        const elements = {
-            table: document.getElementById("jobTable"),
-            searchInput: document.getElementById("searchInput"),
-            searchColumn: document.getElementById("searchColumn"),
-            searchButton: document.getElementById("searchButton"),
-            statusFilter: document.getElementById("statusFilter"),
-            editModal: document.getElementById("editModal"),
-            createModal: document.getElementById("createModal")
-        };
-
-        // State management
+        // API Configuration
+        const API_BASE = '/api';
         let currentState = {
             sortColumn: null,
             sortDirection: 'asc',
-            isLoading: false
+            isLoading: false,
+            currentUser: null
         };
 
-        // Main fetch function with error handling
-        async function fetchJobs(url = "/jobs") {
+        // DOM Elements
+        const elements = {
+            authContainer: document.getElementById('auth-container'),
+            appContainer: document.getElementById('app-container'),
+            loginForm: document.getElementById('login-form'),
+            registerForm: document.getElementById('register-form'),
+            loginError: document.getElementById('login-error'),
+            registerError: document.getElementById('register-error'),
+            currentUserRole: document.getElementById('current-user-role'),
+            table: document.getElementById('jobTable'),
+            searchInput: document.getElementById('searchInput'),
+            searchColumn: document.getElementById('searchColumn'),
+            searchButton: document.getElementById('searchButton'),
+            statusFilter: document.getElementById('statusFilter'),
+            editModal: document.getElementById('editModal'),
+            createModal: document.getElementById('createModal')
+        };
+
+        // Initialize the app
+        function initApp() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            if (token && user) {
+                try {
+                    currentState.currentUser = JSON.parse(user);
+                    showAppUI();
+                    loadJobs();
+                } catch (e) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    showAuthUI();
+                }
+            } else {
+                showAuthUI();
+            }
+        }
+
+        // Auth UI Functions
+        function showTab(tabName) {
+            document.querySelectorAll('.auth-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.textContent.toLowerCase().includes(tabName));
+            });
+            elements.loginForm.classList.toggle('hidden', tabName !== 'login');
+            elements.registerForm.classList.toggle('hidden', tabName !== 'register');
+            clearAuthErrors();
+        }
+
+        function clearAuthErrors() {
+            elements.loginError.textContent = '';
+            elements.registerError.textContent = '';
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
             try {
                 setLoading(true);
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return await response.json();
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    currentState.currentUser = data.user;
+                    showAppUI();
+                    loadJobs();
+                } else {
+                    elements.loginError.textContent = data.error || 'Login failed';
+                }
             } catch (error) {
-                console.error("Failed to fetch jobs:", error);
-                showError("Failed to load jobs. Please try again.");
-                return [];
+                elements.loginError.textContent = 'Network error during login';
             } finally {
                 setLoading(false);
             }
         }
 
-        // Loading state management
-        function setLoading(isLoading) {
-            currentState.isLoading = isLoading;
-            elements.searchButton.disabled = isLoading;
-            if (isLoading) {
-                elements.searchButton.innerHTML = 'Searching <span class="loading"></span>';
-            } else {
-                elements.searchButton.textContent = 'Search';
+        async function handleRegister(event) {
+            event.preventDefault();
+            const username = document.getElementById('reg-username').value;
+            const password = document.getElementById('reg-password').value;
+            const role = document.getElementById('reg-role').value;
+
+            try {
+                setLoading(true);
+                elements.registerError.textContent = '';
+                
+                const response = await fetch(`${API_BASE}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, role })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Show success message and switch to login tab
+                    alert('Registration successful! Please login with your new account.');
+                    showTab('login');
+                    document.getElementById('login-username').value = username;
+                    document.getElementById('login-password').value = '';
+                } else {
+                    // Show error message
+                    elements.registerError.textContent = data.error || 'Registration failed';
+                }
+            } catch (error) {
+                elements.registerError.textContent = 'Network error during registration';
+            } finally {
+                setLoading(false);
             }
         }
 
-        // Error display
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            currentState.currentUser = null;
+            showAuthUI();
+        }
+
+        function showAuthUI() {
+            elements.authContainer.classList.remove('hidden');
+            elements.appContainer.classList.add('hidden');
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+            clearAuthErrors();
+        }
+
+        function showAppUI() {
+            elements.authContainer.classList.add('hidden');
+            elements.appContainer.classList.remove('hidden');
+            
+            // Update UI based on user role
+            if (currentState.currentUser) {
+                elements.currentUserRole.textContent = `Logged in as ${currentState.currentUser.username} (${currentState.currentUser.role})`;
+                
+                // Show admin-only elements
+                if (currentState.currentUser.role === 'admin') {
+                    document.querySelectorAll('.admin-only').forEach(el => {
+                        el.style.display = 'inline-block';
+                    });
+                }
+            }
+        }
+
+        // Job Management Functions
+        // Initialize sort indicators when loading jobs
+        async function loadJobs() {
+            try {
+                setLoading(true);
+                const jobs = await fetchJobs();
+                renderJobs(jobs);
+                updateSortIndicators(); // Add this line
+            } catch (error) {
+                console.error('Failed to load jobs:', error);
+                showError('Failed to load jobs. Please try again.');
+                if (error.message.includes('401')) {
+                    logout();
+                }
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function fetchJobs(url = `${API_BASE}/jobs`) {
+            const token = localStorage.getItem('token');
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        }
+
+        function setLoading(isLoading) {
+            currentState.isLoading = isLoading;
+            if (isLoading) {
+                elements.searchButton.innerHTML = 'Searching <span class="loading"></span>';
+                elements.searchButton.disabled = true;
+            } else {
+                elements.searchButton.textContent = 'Search';
+                elements.searchButton.disabled = false;
+            }
+        }
+
         function showError(message) {
-            elements.table.innerHTML = `<tr><td colspan="11" style="color: red; text-align: center;">${message}</td></tr>`;
+            const tbody = elements.table.querySelector('tbody');
+            tbody.innerHTML = `<tr><td colspan="11" style="color: red; text-align: center;">${message}</td></tr>`;
         }
 
-        // Filter function
         async function filterJobs() {
-            const status = elements.statusFilter.value;
-            const url = status === "all" ? "/jobs" : `/jobs?status=${status}`;
-            const jobs = await fetchJobs(url);
-            renderJobs(jobs);
+            const status = document.getElementById("statusFilter").value;
+            let url = `${API_BASE}/jobs`;
+            
+            if (status && status !== "all") {
+                url += `?status=${encodeURIComponent(status)}`;
+            }
+
+            try {
+                setLoading(true);
+                const jobs = await fetchJobs(url);
+                renderJobs(jobs);
+            } catch (error) {
+                console.error("Filtering failed:", error);
+                showError("Failed to filter jobs. Please try again.");
+            } finally {
+                setLoading(false);
+            }
         }
 
-        // Search function with debouncing
         let searchDebounce;
         elements.searchInput.addEventListener("input", function() {
             clearTimeout(searchDebounce);
@@ -318,39 +693,28 @@
         async function searchJobs() {
             const term = elements.searchInput.value.trim();
             if (!term) {
-                const jobs = await fetchJobs();
-                renderJobs(jobs);
+                await loadJobs();
                 return;
             }
 
             const column = elements.searchColumn.value;
-            const jobs = await fetchJobs(`/jobs/search?column=${column}&term=${encodeURIComponent(term)}`);
+            const jobs = await fetchJobs(`${API_BASE}/jobs/search?column=${column}&term=${encodeURIComponent(term)}`);
             renderJobs(jobs);
         }
 
-        // Render function with optimized DOM updates
+        // Update your renderJobs function to include proper table headers
         function renderJobs(jobs) {
+            const tbody = elements.table.querySelector('tbody');
+            
             if (!jobs || jobs.length === 0) {
-                elements.table.innerHTML = `<tr><td colspan="11" style="text-align: center;">No jobs found</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align: center;">No jobs found</td></tr>`;
                 return;
             }
 
-            let tableHTML = `
-                <tr>
-                    <th onclick="sortJobs('id')">ID ${getSortIndicator('id')}</th>
-                    <th onclick="sortJobs('name')">Name ${getSortIndicator('name')}</th>
-                    <th onclick="sortJobs('job_num')">Job Num ${getSortIndicator('job_num')}</th>
-                    <th onclick="sortJobs('qty')">Qty ${getSortIndicator('qty')}</th>
-                    <th onclick="sortJobs('details_of_job')">Details ${getSortIndicator('details_of_job')}</th>
-                    <th onclick="sortJobs('due_date')">Due Date ${getSortIndicator('due_date')}</th>
-                    <th onclick="sortJobs('department')">Department ${getSortIndicator('department')}</th>
-                    <th onclick="sortJobs('person_in_charge')">Person ${getSortIndicator('person_in_charge')}</th>
-                    <th onclick="sortJobs('status')">Status ${getSortIndicator('status')}</th>
-                    <th onclick="sortJobs('created_at')">Created At ${getSortIndicator('created_at')}</th>
-                    <th>Actions</th>
-                </tr>`;
+            let tableHTML = '';
             
             jobs.forEach(job => {
+                const statusClass = `status-${job.status.replace(/\s+/g, '-').toLowerCase()}`;
                 tableHTML += `
                     <tr>
                         <td>${job.id}</td>
@@ -361,17 +725,23 @@
                         <td>${job.due_date || 'N/A'}</td>
                         <td>${job.department}</td>
                         <td>${job.person_in_charge || 'N/A'}</td>
-                        <td>${job.status}</td>
+                        <td><span class="status-badge ${statusClass}">${job.status}</span></td>
                         <td>${job.created_at || 'N/A'}</td>
-                        <td><button onclick="openEditModal(${JSON.stringify(job).replace(/"/g, '&quot;')})">Edit</button></td>
+                        <td>
+                            <button onclick="openEditModal(${JSON.stringify(job).replace(/"/g, '&quot;')})">Edit</button>
+                            ${currentState.currentUser.role === 'admin' ? 
+                            `<button class="danger" onclick="deleteJob(${job.id})">Delete</button>` : ''}
+                        </td>
                     </tr>`;
             });
             
-            elements.table.innerHTML = tableHTML;
+            tbody.innerHTML = tableHTML;
         }
 
-        // Sorting function
         async function sortJobs(column) {
+            if (currentState.isLoading) return;
+            
+            // Toggle sort direction if clicking the same column
             if (currentState.sortColumn === column) {
                 currentState.sortDirection = currentState.sortDirection === 'asc' ? 'desc' : 'asc';
             } else {
@@ -379,18 +749,39 @@
                 currentState.sortDirection = 'asc';
             }
             
-            const jobs = await fetchJobs(`/jobs?sort=${column}&order=${currentState.sortDirection}`);
-            renderJobs(jobs);
-        }
-
-        function getSortIndicator(column) {
-            if (currentState.sortColumn === column) {
-                return currentState.sortDirection === 'asc' ? '↑' : '↓';
+            try {
+                setLoading(true);
+                const jobs = await fetchJobs(
+                    `${API_BASE}/jobs?sort=${column}&order=${currentState.sortDirection}`
+                );
+                renderJobs(jobs);
+                updateSortIndicators();
+            } catch (error) {
+                console.error("Sorting failed:", error);
+                showError("Failed to sort jobs. Please try again.");
+            } finally {
+                setLoading(false);
             }
-            return '↕';
         }
 
-        // Modal functions
+        // Add this helper function to update sort indicators
+        function updateSortIndicators() {
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.textContent = '↕';
+            });
+            
+            if (currentState.sortColumn) {
+                const header = document.querySelector(`th[onclick*="${currentState.sortColumn}"]`);
+                if (header) {
+                    const indicator = header.querySelector('.sort-indicator');
+                    if (indicator) {
+                        indicator.textContent = currentState.sortDirection === 'asc' ? '↑' : '↓';
+                    }
+                }
+            }
+        }
+
+        // Modal Functions
         function openEditModal(job) {
             document.getElementById("editId").value = job.id;
             document.getElementById("editName").value = job.name;
@@ -412,14 +803,17 @@
             elements.createModal.style.display = "none";
         }
 
-        // Save job function
         async function saveJob() {
             const jobId = document.getElementById("editId").value;
             try {
                 setLoading(true);
-                const response = await fetch(`/jobs/${jobId}`, {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/jobs/${jobId}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({
                         name: document.getElementById("editName").value,
                         job_num: document.getElementById("editJobNum").value,
@@ -430,8 +824,7 @@
                 if (!response.ok) throw new Error('Failed to update job');
                 
                 closeModal();
-                const jobs = await fetchJobs();
-                renderJobs(jobs);
+                await loadJobs();
             } catch (error) {
                 console.error("Error saving job:", error);
                 alert(`Error: ${error.message}`);
@@ -439,7 +832,6 @@
                 setLoading(false);
             }
         }
-
 
         async function filterByDate() {
             const start = document.getElementById("startDate").value;
@@ -451,13 +843,11 @@
             }
             
             if (!start && !end) {
-                // If no dates selected, show all jobs
-                const jobs = await fetchJobs();
-                renderJobs(jobs);
+                await loadJobs();
                 return;
             }
 
-            let url = "/jobs/filter-by-date?";
+            let url = `${API_BASE}/jobs/filter-by-date?`;
             if (start) url += `start=${start}`;
             if (end) url += `${start ? '&' : ''}end=${end}`;
             
@@ -465,13 +855,17 @@
             renderJobs(jobs);
         }
 
-        // Create job function
         async function createJob() {
+
             try {
                 setLoading(true);
-                const response = await fetch("/jobs", {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/jobs`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({
                         name: document.getElementById("createName").value,
                         job_num: document.getElementById("createJobNum").value,
@@ -480,15 +874,15 @@
                         due_date: document.getElementById("createDueDate").value || null,
                         department: document.getElementById("createDepartment").value,
                         person_in_charge: document.getElementById("createPerson").value,
-                        status: document.getElementById("createStatus").value
+                        status: document.getElementById("createStatus").value,
+                        assigned_user_id: currentState.currentUser.id
                     })
                 });
                 
                 if (!response.ok) throw new Error('Failed to create job');
                 
                 closeCreateModal();
-                const jobs = await fetchJobs();
-                renderJobs(jobs);
+                await loadJobs();
             } catch (error) {
                 console.error("Error creating job:", error);
                 alert(`Error: ${error.message}`);
@@ -497,17 +891,43 @@
             }
         }
 
-        // Initialize
-        window.onload = async function() {
-            const jobs = await fetchJobs();
-            renderJobs(jobs);
+        async function deleteJob(jobId) {
+            if (!confirm('Are you sure you want to delete this job?')) return;
             
-            // Close modals when clicking outside
-            window.addEventListener('click', (event) => {
-                if (event.target === elements.editModal) closeModal();
-                if (event.target === elements.createModal) closeCreateModal();
-            });
-        };
+            try {
+                setLoading(true);
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE}/jobs/${jobId}`, {
+                    method: 'DELETE',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to delete job');
+                
+                await loadJobs();
+            } catch (error) {
+                console.error("Error deleting job:", error);
+                alert(`Error: ${error.message}`);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function adminFunction() {
+            alert('Admin function triggered!');
+            // Add your admin-specific functionality here
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', initApp);
+        
+        // Close modals when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === elements.editModal) closeModal();
+            if (event.target === elements.createModal) closeCreateModal();
+        });
     </script>
 </body>
 </html>
