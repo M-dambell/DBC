@@ -191,7 +191,7 @@
             z-index: 100;
             margin-bottom: 5px;
         }
-        
+
         .modal {
             display: none;
             position: fixed;
@@ -299,6 +299,24 @@
         .status-done {
             background-color: #2ecc71;
             color: white;
+        }
+
+        /* Form styling */
+        form label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        form input, form select, form textarea {
+            width: 100%;
+            padding: 8px;
+            margin-top: 4px;
+            box-sizing: border-box;
+        }
+        
+        form textarea {
+            height: 80px;
+            resize: vertical;
         }
     </style>
 </head>
@@ -424,16 +442,15 @@
                 <h2>Create New Job</h2>
                 <form id="createForm">
                     <label>Name: <input type="text" id="createName" required></label>
-                    <label>Job Num: <input type="text" id="createJobNum" required></label>
-                    <label>Qty: <input type="number" id="createQty" required min="1"></label>
+                    <label>Job Number: <input type="text" id="createJobNum" required></label>
+                    <label>Quantity: <input type="number" id="createQty" required min="1" value="1"></label>
                     <label>Details: <textarea id="createDetails"></textarea></label>
                     <label>Due Date: <input type="date" id="createDueDate"></label>
                     <label>Department: 
-                        <select id="createStatus" required>
-                            <option value="designing">Designing</option>
-                            <option value="in progress">In Progress</option>
-                            <option value="waiting on approval">Waiting Approval</option>
-                            <option value="done">Done</option>
+                        <select id="createDepartment" required>
+                            <option value="Production">Production</option>
+                            <option value="digital Print">Digital Print</option>
+                            <option value="screen">Screen</option>
                         </select>
                     </label>
                     <label>Person in Charge: <input type="text" id="createPerson"></label>
@@ -442,9 +459,10 @@
                             <option value="designing">Designing</option>
                             <option value="in progress">In Progress</option>
                             <option value="waiting on approval">Waiting Approval</option>
+                            <option value="done">Done</option>
                         </select>
                     </label>
-                    <button type="button" onclick="createJob()">Save</button>
+                    <button type="button" onclick="createJob()">Create Job</button>
                 </form>
             </div>
         </div>
@@ -475,7 +493,8 @@
             searchButton: document.getElementById('searchButton'),
             statusFilter: document.getElementById('statusFilter'),
             editModal: document.getElementById('editModal'),
-            createModal: document.getElementById('createModal')
+            createModal: document.getElementById('createModal'),
+            createForm: document.getElementById('createForm')
         };
 
         // Initialize the app
@@ -563,13 +582,11 @@
                 const data = await response.json();
                 
                 if (response.ok && data.success) {
-                    // Show success message and switch to login tab
                     alert('Registration successful! Please login with your new account.');
                     showTab('login');
                     document.getElementById('login-username').value = username;
                     document.getElementById('login-password').value = '';
                 } else {
-                    // Show error message
                     elements.registerError.textContent = data.error || 'Registration failed';
                 }
             } catch (error) {
@@ -598,11 +615,9 @@
             elements.authContainer.classList.add('hidden');
             elements.appContainer.classList.remove('hidden');
             
-            // Update UI based on user role
             if (currentState.currentUser) {
                 elements.currentUserRole.textContent = `Logged in as ${currentState.currentUser.username} (${currentState.currentUser.role})`;
                 
-                // Show admin-only elements
                 if (currentState.currentUser.role === 'admin') {
                     document.querySelectorAll('.admin-only').forEach(el => {
                         el.style.display = 'inline-block';
@@ -612,13 +627,12 @@
         }
 
         // Job Management Functions
-        // Initialize sort indicators when loading jobs
         async function loadJobs() {
             try {
                 setLoading(true);
                 const jobs = await fetchJobs();
                 renderJobs(jobs);
-                updateSortIndicators(); // Add this line
+                updateSortIndicators();
             } catch (error) {
                 console.error('Failed to load jobs:', error);
                 showError('Failed to load jobs. Please try again.');
@@ -702,7 +716,6 @@
             renderJobs(jobs);
         }
 
-        // Update your renderJobs function to include proper table headers
         function renderJobs(jobs) {
             const tbody = elements.table.querySelector('tbody');
             
@@ -725,7 +738,7 @@
                         <td>${job.due_date || 'N/A'}</td>
                         <td>${job.department}</td>
                         <td>${job.person_in_charge || 'N/A'}</td>
-                        <td><span class="status-badge ${statusClass}">${job.status}</span></td>
+                        <td><span class="status-badge ${statusClass}" data-status="${job.status}">${job.status}</span></td>
                         <td>${job.created_at || 'N/A'}</td>
                         <td>
                             <button onclick="openEditModal(${JSON.stringify(job).replace(/"/g, '&quot;')})">Edit</button>
@@ -741,7 +754,6 @@
         async function sortJobs(column) {
             if (currentState.isLoading) return;
             
-            // Toggle sort direction if clicking the same column
             if (currentState.sortColumn === column) {
                 currentState.sortDirection = currentState.sortDirection === 'asc' ? 'desc' : 'asc';
             } else {
@@ -764,7 +776,6 @@
             }
         }
 
-        // Add this helper function to update sort indicators
         function updateSortIndicators() {
             document.querySelectorAll('.sort-indicator').forEach(indicator => {
                 indicator.textContent = '↕';
@@ -796,6 +807,8 @@
         }
 
         function openCreateModal() {
+            // Reset form when opening
+            elements.createForm.reset();
             elements.createModal.style.display = "block";
         }
 
@@ -856,10 +869,18 @@
         }
 
         async function createJob() {
-
             try {
                 setLoading(true);
                 const token = localStorage.getItem('token');
+                
+                // Validate required fields
+                const requiredFields = ['createName', 'createJobNum', 'createQty', 'createDepartment', 'createStatus'];
+                for (const fieldId of requiredFields) {
+                    if (!document.getElementById(fieldId).value) {
+                        throw new Error(`Missing required field: ${fieldId.replace('create', '')}`);
+                    }
+                }
+
                 const response = await fetch(`${API_BASE}/jobs`, {
                     method: "POST",
                     headers: { 
@@ -869,7 +890,7 @@
                     body: JSON.stringify({
                         name: document.getElementById("createName").value,
                         job_num: document.getElementById("createJobNum").value,
-                        qty: parseInt(document.getElementById("createQty").value),
+                        qty: parseInt(document.getElementById("createQty").value) || 1,
                         details_of_job: document.getElementById("createDetails").value,
                         due_date: document.getElementById("createDueDate").value || null,
                         department: document.getElementById("createDepartment").value,
@@ -879,7 +900,10 @@
                     })
                 });
                 
-                if (!response.ok) throw new Error('Failed to create job');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to create job');
+                }
                 
                 closeCreateModal();
                 await loadJobs();

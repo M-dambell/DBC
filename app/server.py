@@ -167,12 +167,10 @@ def get_jobs(current_user):
     sort_column = request.args.get('sort')
     sort_order = request.args.get('order', 'asc')
     
-    # Validate status filter
     valid_statuses = ['designing', 'in progress', 'waiting on approval', 'done']
     if status and status != 'all' and status not in valid_statuses:
         return jsonify({"error": "Invalid status"}), 400
     
-    # Validate sort column
     valid_columns = [
         'id', 'name', 'job_num', 'qty', 'details_of_job',
         'due_date', 'department', 'person_in_charge', 'status', 'created_at'
@@ -181,7 +179,6 @@ def get_jobs(current_user):
     if sort_column and sort_column not in valid_columns:
         return jsonify({"error": "Invalid sort column"}), 400
     
-    # Validate sort order
     if sort_order.lower() not in ['asc', 'desc']:
         return jsonify({"error": "Invalid sort order"}), 400
 
@@ -197,28 +194,23 @@ def get_jobs(current_user):
                 where_clauses = []
                 params = []
                 
-                # Role-based filtering
                 if current_user['role'] not in ['admin', 'manager']:
                     where_clauses.append("j.assigned_user_id = %s")
                     params.append(current_user['id'])
                 
-                # Status filtering
                 if status and status != 'all':
                     where_clauses.append("j.status = %s")
                     params.append(status)
                 
-                # Combine WHERE clauses
                 if where_clauses:
                     base_query += " WHERE " + " AND ".join(where_clauses)
                 
-                # Add sorting if specified
                 if sort_column:
                     base_query += f" ORDER BY j.{sort_column} {sort_order}"
                 
                 cursor.execute(base_query, params)
                 jobs = cursor.fetchall()
                 
-                # Format dates for JSON serialization
                 for job in jobs:
                     for date_field in ['due_date', 'created_at']:
                         if job.get(date_field):
@@ -227,42 +219,6 @@ def get_jobs(current_user):
                 return jsonify(jobs)
     except Exception as e:
         return jsonify({"error": f"Failed to fetch jobs: {str(e)}"}), 500
-
-@app.route('/api/jobs/<int:job_id>', methods=['GET'])
-@token_required
-@role_required(['admin', 'manager', 'user'])
-def get_job(current_user, job_id):
-    """Get a single job by ID"""
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                if current_user['role'] in ['admin', 'manager']:
-                    cursor.execute("""
-                        SELECT j.*, u.username as assigned_username 
-                        FROM jobs j
-                        LEFT JOIN users u ON j.assigned_user_id = u.id
-                        WHERE j.id = %s
-                    """, (job_id,))
-                else:
-                    cursor.execute("""
-                        SELECT j.*, u.username as assigned_username 
-                        FROM jobs j
-                        LEFT JOIN users u ON j.assigned_user_id = u.id
-                        WHERE j.id = %s AND j.assigned_user_id = %s
-                    """, (job_id, current_user['id']))
-                
-                job = cursor.fetchone()
-                if not job:
-                    return jsonify({"error": "Job not found"}), 404
-                
-                # Format dates
-                for date_field in ['due_date', 'created_at']:
-                    if job.get(date_field):
-                        job[date_field] = job[date_field].isoformat()
-                
-                return jsonify(job)
-    except Exception as e:
-        return jsonify({"error": f"Failed to fetch job: {str(e)}"}), 500
 
 @app.route('/api/jobs', methods=['POST'])
 @token_required
@@ -274,7 +230,6 @@ def create_job(current_user):
     if not all(field in data for field in required_fields):
         return jsonify({"error": "Missing required fields"}), 400
 
-    # Validate status
     valid_statuses = ['designing', 'in progress', 'waiting on approval', 'done']
     if data.get('status') not in valid_statuses:
         return jsonify({"error": "Invalid status"}), 400
@@ -304,7 +259,6 @@ def create_job(current_user):
                 new_job = cursor.fetchone()
                 conn.commit()
                 
-                # Format dates
                 for date_field in ['due_date', 'created_at']:
                     if new_job.get(date_field):
                         new_job[date_field] = new_job[date_field].isoformat()
@@ -320,7 +274,6 @@ def update_job(current_user, job_id):
     """Update job details"""
     data = request.get_json()
     
-    # Validate status if provided
     if 'status' in data:
         valid_statuses = ['designing', 'in progress', 'waiting on approval', 'done']
         if data['status'] not in valid_statuses:
@@ -361,7 +314,6 @@ def update_job(current_user, job_id):
                 if not updated_job:
                     return jsonify({"error": "Job not found"}), 404
                 
-                # Format dates
                 for date_field in ['due_date', 'created_at']:
                     if updated_job.get(date_field):
                         updated_job[date_field] = updated_job[date_field].isoformat()
@@ -461,7 +413,7 @@ def filter_jobs_by_date(current_user):
                     params.append(start_date)
                 if end_date:
                     query += " AND j.created_at <= %s"
-                    params.append(end_date + " 23:59:59")  # Include entire end day
+                    params.append(end_date + " 23:59:59")
                 
                 if current_user['role'] not in ['admin', 'manager']:
                     query += " AND j.assigned_user_id = %s"
