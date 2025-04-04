@@ -9,7 +9,7 @@ import jwt
 from flask_cors import CORS
 
 # Initialize Flask app
-app = Flask(__name__, static_folder='../static')
+app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(24).hex()
 CORS(app)  # Enable CORS for all routes
 
@@ -497,4 +497,5 @@ def initialize_database():
 
 if __name__ == '__main__':
     initialize_database()
-    app.run(host='0.0.0.0', port=10000, debug=False)
+    app.run(host='0.0.0.0', port=5000, debug=False)
+    
