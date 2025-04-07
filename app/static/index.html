@@ -13,7 +13,6 @@
             background-color: #f5f5f5;
         }
 
-        /* Auth UI Styles */
         .auth-container {
             max-width: 400px;
             margin: 50px auto;
@@ -77,7 +76,6 @@
             font-size: 14px;
         }
 
-        /* Main App Styles */
         #app-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -148,48 +146,15 @@
             background: #3498db;
             color: white;
             position: relative;
+            cursor: pointer;
         }
 
         tr:nth-child(even) {
             background-color: #f2f2f2;
         }
 
-        /* Add this to your table styles */
-        td {
-            white-space: nowrap; /* Prevent cell content from wrapping */
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 200px; /* Adjust as needed */
-        }
-
-        /* Specifically for status column */
-        td:nth-child(9) { /* Assuming status is 9th column */
-            width: 120px; /* Fixed width for status column */
-            min-width: 120px;
-        }
-
         tr:hover {
             background-color: #e9e9e9;
-        }
-
-        .status-badge {
-            position: relative;
-        }
-
-        .status-badge:hover::after {
-            content: attr(data-status);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            white-space: nowrap;
-            z-index: 100;
-            margin-bottom: 5px;
         }
 
         .modal {
@@ -250,16 +215,6 @@
             color: #3498db;
         }
 
-        th {
-            position: relative;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        th:hover {
-            background-color: #2980b9;
-        }
-
         .sort-indicator {
             margin-left: 5px;
             font-size: 12px;
@@ -267,41 +222,48 @@
             right: 5px;
         }
 
-        /* Add this to your existing status-badge styles */
         .status-badge {
             padding: 3px 8px;
             border-radius: 12px;
             font-size: 12px;
             font-weight: 500;
             text-transform: capitalize;
-            white-space: nowrap; /* Prevent text wrapping */
-            display: inline-block; /* Better control over width */
-            max-width: 150px; /* Set a reasonable max width */
+            display: inline-block;
+            max-width: 150px;
             overflow: hidden;
-            text-overflow: ellipsis; /* Add ... if text is too long */
+            text-overflow: ellipsis;
         }
 
         .status-designing {
-            background-color: #3498db;
+            background-color: #7E57C2;
             color: white;
         }
 
         .status-in-progress {
-            background-color: #f39c12;
+            background-color: #42A5F5;
             color: white;
         }
 
         .status-waiting-on-approval {
-            background-color: #9b59b6;
+            background-color: #FFA726;
             color: white;
         }
 
-        .status-done {
-            background-color: #2ecc71;
+        .status-completed {
+            background-color: #66BB6A;
             color: white;
         }
 
-        /* Form styling */
+        .status-to-be-fixed {
+            background-color: #EF5350;
+            color: white;
+        }
+
+        .status-on-hold {
+            background-color: #FFCA28;
+            color: white;
+        }
+
         form label {
             display: block;
             margin-bottom: 10px;
@@ -360,12 +322,14 @@
 
         <div class="controls">
             <label for="statusFilter">Filter by Status:</label>
-            <select id="statusFilter" onchange="filterJobs()">
+            <select id="statusFilter">
                 <option value="all">All Statuses</option>
                 <option value="designing">Designing</option>
                 <option value="in progress">In Progress</option>
                 <option value="waiting on approval">Waiting Approval</option>
-                <option value="done">Done</option>
+                <option value="completed">Completed</option>
+                <option value="on hold">On Hold</option>
+                <option value="to be fixed">To Be Fixed</option>
             </select>
 
             <div class="search-container">
@@ -378,17 +342,18 @@
                     <option value="status">Status</option>
                 </select>
                 <input type="text" id="searchInput" placeholder="Enter search term...">
-                <button id="searchButton" onclick="searchJobs()">Search</button>
+                <button id="searchButton">Search</button>
             </div>
            
             <div class="date-filter">
                 <label>From: <input type="date" id="startDate"></label>
                 <label>To: <input type="date" id="endDate"></label>
-                <button onclick="filterByDate()">Filter Dates</button>
+                <button id="dateFilterButton">Filter Dates</button>
             </div>
             
-            <button onclick="openCreateModal()">Create New Job</button>
-            <button class="admin-only" onclick="adminFunction()">Admin Panel</button>
+            <button id="createJobButton">Create New Job</button>
+            <button class="admin-only" id="adminPanelButton">Admin Panel</button>
+            <button id="resetFilters">Reset Filters</button>
         </div>
 
         <table id="jobTable">
@@ -426,7 +391,9 @@
                             <option value="designing">Designing</option>
                             <option value="in progress">In Progress</option>
                             <option value="waiting on approval">Waiting Approval</option>
-                            <option value="done">Done</option>
+                            <option value="completed">Completed</option>
+                            <option value="on hold">On Hold</option>
+                            <option value="to be fixed">To Be Fixed</option>
                         </select>
                     </label>
                     <label>Created At: <span id="editCreatedAt">N/A</span></label>
@@ -459,7 +426,9 @@
                             <option value="designing">Designing</option>
                             <option value="in progress">In Progress</option>
                             <option value="waiting on approval">Waiting Approval</option>
-                            <option value="done">Done</option>
+                            <option value="completed">Completed</option>
+                            <option value="on hold">On Hold</option>
+                            <option value="to be fixed">To Be Fixed</option>
                         </select>
                     </label>
                     <button type="button" onclick="createJob()">Create Job</button>
@@ -471,30 +440,21 @@
     <script>
         // API Configuration
         const API_BASE = '/api';
-        let currentState = {
+        let searchDebounce;
+
+        // Application State
+        const currentState = {
             sortColumn: null,
             sortDirection: 'asc',
             isLoading: false,
-            currentUser: null
-        };
-
-        // DOM Elements
-        const elements = {
-            authContainer: document.getElementById('auth-container'),
-            appContainer: document.getElementById('app-container'),
-            loginForm: document.getElementById('login-form'),
-            registerForm: document.getElementById('register-form'),
-            loginError: document.getElementById('login-error'),
-            registerError: document.getElementById('register-error'),
-            currentUserRole: document.getElementById('current-user-role'),
-            table: document.getElementById('jobTable'),
-            searchInput: document.getElementById('searchInput'),
-            searchColumn: document.getElementById('searchColumn'),
-            searchButton: document.getElementById('searchButton'),
-            statusFilter: document.getElementById('statusFilter'),
-            editModal: document.getElementById('editModal'),
-            createModal: document.getElementById('createModal'),
-            createForm: document.getElementById('createForm')
+            currentUser: null,
+            filters: {
+                status: 'all',
+                searchColumn: 'name',
+                searchTerm: '',
+                startDate: '',
+                endDate: ''
+            }
         };
 
         // Initialize the app
@@ -515,21 +475,48 @@
             } else {
                 showAuthUI();
             }
+
+            // Set up event listeners
+            document.getElementById('statusFilter').addEventListener('change', updateStatusFilter);
+            document.getElementById('searchInput').addEventListener('input', function() {
+                clearTimeout(searchDebounce);
+                searchDebounce = setTimeout(updateSearch, 300);
+            });
+            document.getElementById('searchColumn').addEventListener('change', updateSearch);
+            document.getElementById('dateFilterButton').addEventListener('click', updateDateFilter);
+            document.getElementById('createJobButton').addEventListener('click', openCreateModal);
+            document.getElementById('resetFilters').addEventListener('click', resetFilters);
+            
+            // Admin button only shown to admins
+            const adminPanelButton = document.getElementById('adminPanelButton');
+            if (adminPanelButton) {
+                adminPanelButton.addEventListener('click', adminFunction);
+            }
+
+            // Close modals when clicking outside
+            window.addEventListener('click', function(event) {
+                if (event.target === document.getElementById('editModal')) {
+                    closeModal();
+                }
+                if (event.target === document.getElementById('createModal')) {
+                    closeCreateModal();
+                }
+            });
         }
 
-        // Auth UI Functions
+        // Auth Functions
         function showTab(tabName) {
             document.querySelectorAll('.auth-tab').forEach(tab => {
                 tab.classList.toggle('active', tab.textContent.toLowerCase().includes(tabName));
             });
-            elements.loginForm.classList.toggle('hidden', tabName !== 'login');
-            elements.registerForm.classList.toggle('hidden', tabName !== 'register');
+            document.getElementById('login-form').classList.toggle('hidden', tabName !== 'login');
+            document.getElementById('register-form').classList.toggle('hidden', tabName !== 'register');
             clearAuthErrors();
         }
 
         function clearAuthErrors() {
-            elements.loginError.textContent = '';
-            elements.registerError.textContent = '';
+            document.getElementById('login-error').textContent = '';
+            document.getElementById('register-error').textContent = '';
         }
 
         async function handleLogin(event) {
@@ -554,10 +541,10 @@
                     showAppUI();
                     loadJobs();
                 } else {
-                    elements.loginError.textContent = data.error || 'Login failed';
+                    document.getElementById('login-error').textContent = data.error || 'Login failed';
                 }
             } catch (error) {
-                elements.loginError.textContent = 'Network error during login';
+                document.getElementById('login-error').textContent = 'Network error during login';
             } finally {
                 setLoading(false);
             }
@@ -571,7 +558,7 @@
 
             try {
                 setLoading(true);
-                elements.registerError.textContent = '';
+                document.getElementById('register-error').textContent = '';
                 
                 const response = await fetch(`${API_BASE}/register`, {
                     method: 'POST',
@@ -587,10 +574,10 @@
                     document.getElementById('login-username').value = username;
                     document.getElementById('login-password').value = '';
                 } else {
-                    elements.registerError.textContent = data.error || 'Registration failed';
+                    document.getElementById('register-error').textContent = data.error || 'Registration failed';
                 }
             } catch (error) {
-                elements.registerError.textContent = 'Network error during registration';
+                document.getElementById('register-error').textContent = 'Network error during registration';
             } finally {
                 setLoading(false);
             }
@@ -604,19 +591,20 @@
         }
 
         function showAuthUI() {
-            elements.authContainer.classList.remove('hidden');
-            elements.appContainer.classList.add('hidden');
+            document.getElementById('auth-container').classList.remove('hidden');
+            document.getElementById('app-container').classList.add('hidden');
             document.getElementById('login-username').value = '';
             document.getElementById('login-password').value = '';
             clearAuthErrors();
         }
 
         function showAppUI() {
-            elements.authContainer.classList.add('hidden');
-            elements.appContainer.classList.remove('hidden');
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
             
             if (currentState.currentUser) {
-                elements.currentUserRole.textContent = `Logged in as ${currentState.currentUser.username} (${currentState.currentUser.role})`;
+                document.getElementById('current-user-role').textContent = 
+                    `Logged in as ${currentState.currentUser.username} (${currentState.currentUser.role})`;
                 
                 if (currentState.currentUser.role === 'admin') {
                     document.querySelectorAll('.admin-only').forEach(el => {
@@ -627,12 +615,125 @@
         }
 
         // Job Management Functions
+        function setLoading(isLoading) {
+            currentState.isLoading = isLoading;
+            const searchButton = document.getElementById('searchButton');
+            if (searchButton) {
+                searchButton.innerHTML = isLoading ? 'Searching <span class="loading"></span>' : 'Search';
+                searchButton.disabled = isLoading;
+            }
+        }
+
+        function showError(message) {
+            const tbody = document.getElementById('jobTable').querySelector('tbody');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="11" style="color: red; text-align: center;">${message}</td></tr>`;
+            }
+        }
+
+        async function fetchJobs(url = `${API_BASE}/jobs`) {
+            const token = localStorage.getItem('token');
+            const response = await fetch(url, {
+                headers: { 
+                    'Authorization': `Bearer ${token || ''}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            return await response.json();
+        }
+
+        function updateStatusFilter() {
+            currentState.filters.status = document.getElementById('statusFilter').value;
+            loadJobs();
+        }
+
+        function updateSearch() {
+            currentState.filters.searchTerm = document.getElementById('searchInput').value.trim();
+            currentState.filters.searchColumn = document.getElementById('searchColumn').value;
+            loadJobs();
+        }
+
+        function updateDateFilter() {
+            currentState.filters.startDate = document.getElementById('startDate').value;
+            currentState.filters.endDate = document.getElementById('endDate').value;
+            
+            // Validate date range
+            if (currentState.filters.startDate && currentState.filters.endDate && 
+                currentState.filters.startDate > currentState.filters.endDate) {
+                alert("End date cannot be before start date");
+                return;
+            }
+            
+            loadJobs();
+        }
+
+        function resetFilters() {
+            // Reset all filters
+            document.getElementById('statusFilter').value = 'all';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            
+            // Reset state
+            currentState.filters = {
+                status: 'all',
+                searchColumn: 'name',
+                searchTerm: '',
+                startDate: '',
+                endDate: ''
+            };
+            
+            // Reset sorting
+            currentState.sortColumn = null;
+            currentState.sortDirection = 'asc';
+            
+            // Update sort indicators
+            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                indicator.textContent = '↕';
+            });
+            
+            loadJobs();
+        }
+
         async function loadJobs() {
             try {
                 setLoading(true);
-                const jobs = await fetchJobs();
+                
+                const queryParams = [];
+                
+                // Status filter
+                if (currentState.filters.status && currentState.filters.status !== 'all') {
+                    queryParams.push(`status=${encodeURIComponent(currentState.filters.status)}`);
+                }
+                
+                // Search filter
+                if (currentState.filters.searchTerm) {
+                    queryParams.push(`search_column=${encodeURIComponent(currentState.filters.searchColumn)}`);
+                    queryParams.push(`search_term=${encodeURIComponent(currentState.filters.searchTerm)}`);
+                }
+                
+                // Date filters
+                if (currentState.filters.startDate) {
+                    queryParams.push(`start_date=${encodeURIComponent(currentState.filters.startDate)}`);
+                }
+                if (currentState.filters.endDate) {
+                    queryParams.push(`end_date=${encodeURIComponent(currentState.filters.endDate)}`);
+                }
+                
+                // Sorting
+                if (currentState.sortColumn) {
+                    queryParams.push(`sort=${encodeURIComponent(currentState.sortColumn)}`);
+                    queryParams.push(`order=${encodeURIComponent(currentState.sortDirection)}`);
+                }
+                
+                const queryString = queryParams.length ? `?${queryParams.join('&')}` : '';
+                const jobs = await fetchJobs(`${API_BASE}/jobs${queryString}`);
                 renderJobs(jobs);
-                updateSortIndicators();
             } catch (error) {
                 console.error('Failed to load jobs:', error);
                 showError('Failed to load jobs. Please try again.');
@@ -644,80 +745,9 @@
             }
         }
 
-        async function fetchJobs(url = `${API_BASE}/jobs`) {
-            const token = localStorage.getItem('token');
-            const response = await fetch(url, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            return await response.json();
-        }
-
-        function setLoading(isLoading) {
-            currentState.isLoading = isLoading;
-            if (isLoading) {
-                elements.searchButton.innerHTML = 'Searching <span class="loading"></span>';
-                elements.searchButton.disabled = true;
-            } else {
-                elements.searchButton.textContent = 'Search';
-                elements.searchButton.disabled = false;
-            }
-        }
-
-        function showError(message) {
-            const tbody = elements.table.querySelector('tbody');
-            tbody.innerHTML = `<tr><td colspan="11" style="color: red; text-align: center;">${message}</td></tr>`;
-        }
-
-        async function filterJobs() {
-            const status = document.getElementById("statusFilter").value;
-            let url = `${API_BASE}/jobs`;
-            
-            if (status && status !== "all") {
-                url += `?status=${encodeURIComponent(status)}`;
-            }
-
-            try {
-                setLoading(true);
-                const jobs = await fetchJobs(url);
-                renderJobs(jobs);
-            } catch (error) {
-                console.error("Filtering failed:", error);
-                showError("Failed to filter jobs. Please try again.");
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        let searchDebounce;
-        elements.searchInput.addEventListener("input", function() {
-            clearTimeout(searchDebounce);
-            searchDebounce = setTimeout(() => {
-                const term = this.value.trim();
-                if (term.length >= 2 || term.length === 0) {
-                    searchJobs();
-                }
-            }, 300);
-        });
-
-        async function searchJobs() {
-            const term = elements.searchInput.value.trim();
-            if (!term) {
-                await loadJobs();
-                return;
-            }
-
-            const column = elements.searchColumn.value;
-            const jobs = await fetchJobs(`${API_BASE}/jobs/search?column=${column}&term=${encodeURIComponent(term)}`);
-            renderJobs(jobs);
-        }
-
         function renderJobs(jobs) {
-            const tbody = elements.table.querySelector('tbody');
+            const tbody = document.getElementById('jobTable').querySelector('tbody');
+            if (!tbody) return;
             
             if (!jobs || jobs.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="11" style="text-align: center;">No jobs found</td></tr>`;
@@ -742,7 +772,7 @@
                         <td>${job.created_at || 'N/A'}</td>
                         <td>
                             <button onclick="openEditModal(${JSON.stringify(job).replace(/"/g, '&quot;')})">Edit</button>
-                            ${currentState.currentUser.role === 'admin' ? 
+                            ${currentState.currentUser && currentState.currentUser.role === 'admin' ? 
                             `<button class="danger" onclick="deleteJob(${job.id})">Delete</button>` : ''}
                         </td>
                     </tr>`;
@@ -751,7 +781,7 @@
             tbody.innerHTML = tableHTML;
         }
 
-        async function sortJobs(column) {
+        function sortJobs(column) {
             if (currentState.isLoading) return;
             
             if (currentState.sortColumn === column) {
@@ -761,63 +791,47 @@
                 currentState.sortDirection = 'asc';
             }
             
-            try {
-                setLoading(true);
-                const jobs = await fetchJobs(
-                    `${API_BASE}/jobs?sort=${column}&order=${currentState.sortDirection}`
-                );
-                renderJobs(jobs);
-                updateSortIndicators();
-            } catch (error) {
-                console.error("Sorting failed:", error);
-                showError("Failed to sort jobs. Please try again.");
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        function updateSortIndicators() {
+            // Update sort indicators
             document.querySelectorAll('.sort-indicator').forEach(indicator => {
                 indicator.textContent = '↕';
             });
             
-            if (currentState.sortColumn) {
-                const header = document.querySelector(`th[onclick*="${currentState.sortColumn}"]`);
-                if (header) {
-                    const indicator = header.querySelector('.sort-indicator');
-                    if (indicator) {
-                        indicator.textContent = currentState.sortDirection === 'asc' ? '↑' : '↓';
-                    }
+            const header = document.querySelector(`th[onclick*="${column}"]`);
+            if (header) {
+                const indicator = header.querySelector('.sort-indicator');
+                if (indicator) {
+                    indicator.textContent = currentState.sortDirection === 'asc' ? '↑' : '↓';
                 }
             }
+            
+            loadJobs();
         }
 
         // Modal Functions
         function openEditModal(job) {
-            document.getElementById("editId").value = job.id;
-            document.getElementById("editName").value = job.name;
-            document.getElementById("editJobNum").value = job.job_num;
-            document.getElementById("editStatus").value = job.status;
-            document.getElementById("editCreatedAt").textContent = job.created_at || "N/A";
-            elements.editModal.style.display = "block";
+            document.getElementById('editId').value = job.id;
+            document.getElementById('editName').value = job.name;
+            document.getElementById('editJobNum').value = job.job_num;
+            document.getElementById('editStatus').value = job.status;
+            document.getElementById('editCreatedAt').textContent = job.created_at || 'N/A';
+            document.getElementById('editModal').style.display = 'block';
         }
 
         function closeModal() {
-            elements.editModal.style.display = "none";
+            document.getElementById('editModal').style.display = 'none';
         }
 
         function openCreateModal() {
-            // Reset form when opening
-            elements.createForm.reset();
-            elements.createModal.style.display = "block";
+            document.getElementById('createForm').reset();
+            document.getElementById('createModal').style.display = 'block';
         }
 
         function closeCreateModal() {
-            elements.createModal.style.display = "none";
+            document.getElementById('createModal').style.display = 'none';
         }
 
         async function saveJob() {
-            const jobId = document.getElementById("editId").value;
+            const jobId = document.getElementById('editId').value;
             try {
                 setLoading(true);
                 const token = localStorage.getItem('token');
@@ -828,9 +842,9 @@
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        name: document.getElementById("editName").value,
-                        job_num: document.getElementById("editJobNum").value,
-                        status: document.getElementById("editStatus").value
+                        name: document.getElementById('editName').value,
+                        job_num: document.getElementById('editJobNum').value,
+                        status: document.getElementById('editStatus').value
                     })
                 });
                 
@@ -839,33 +853,11 @@
                 closeModal();
                 await loadJobs();
             } catch (error) {
-                console.error("Error saving job:", error);
+                console.error('Error saving job:', error);
                 alert(`Error: ${error.message}`);
             } finally {
                 setLoading(false);
             }
-        }
-
-        async function filterByDate() {
-            const start = document.getElementById("startDate").value;
-            const end = document.getElementById("endDate").value;
-
-            if (start && end && start > end) {
-                alert("End date cannot be before start date");
-                return;
-            }
-            
-            if (!start && !end) {
-                await loadJobs();
-                return;
-            }
-
-            let url = `${API_BASE}/jobs/filter-by-date?`;
-            if (start) url += `start=${start}`;
-            if (end) url += `${start ? '&' : ''}end=${end}`;
-            
-            const jobs = await fetchJobs(url);
-            renderJobs(jobs);
         }
 
         async function createJob() {
@@ -882,20 +874,20 @@
                 }
 
                 const response = await fetch(`${API_BASE}/jobs`, {
-                    method: "POST",
+                    method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        name: document.getElementById("createName").value,
-                        job_num: document.getElementById("createJobNum").value,
-                        qty: parseInt(document.getElementById("createQty").value) || 1,
-                        details_of_job: document.getElementById("createDetails").value,
-                        due_date: document.getElementById("createDueDate").value || null,
-                        department: document.getElementById("createDepartment").value,
-                        person_in_charge: document.getElementById("createPerson").value,
-                        status: document.getElementById("createStatus").value,
+                        name: document.getElementById('createName').value,
+                        job_num: document.getElementById('createJobNum').value,
+                        qty: parseInt(document.getElementById('createQty').value) || 1,
+                        details_of_job: document.getElementById('createDetails').value,
+                        due_date: document.getElementById('createDueDate').value || null,
+                        department: document.getElementById('createDepartment').value,
+                        person_in_charge: document.getElementById('createPerson').value,
+                        status: document.getElementById('createStatus').value,
                         assigned_user_id: currentState.currentUser.id
                     })
                 });
@@ -908,7 +900,7 @@
                 closeCreateModal();
                 await loadJobs();
             } catch (error) {
-                console.error("Error creating job:", error);
+                console.error('Error creating job:', error);
                 alert(`Error: ${error.message}`);
             } finally {
                 setLoading(false);
@@ -932,7 +924,7 @@
                 
                 await loadJobs();
             } catch (error) {
-                console.error("Error deleting job:", error);
+                console.error('Error deleting job:', error);
                 alert(`Error: ${error.message}`);
             } finally {
                 setLoading(false);
@@ -944,14 +936,8 @@
             // Add your admin-specific functionality here
         }
 
-        // Initialize the app
+        // Initialize the app when DOM is loaded
         document.addEventListener('DOMContentLoaded', initApp);
-        
-        // Close modals when clicking outside
-        window.addEventListener('click', (event) => {
-            if (event.target === elements.editModal) closeModal();
-            if (event.target === elements.createModal) closeCreateModal();
-        });
     </script>
 </body>
 </html>

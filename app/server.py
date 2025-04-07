@@ -162,12 +162,17 @@ def login():
 @token_required
 @role_required(['admin', 'manager', 'user'])
 def get_jobs(current_user):
-    """Get jobs list with role-based filtering and sorting"""
+    """Get jobs list with combined filtering"""
     status = request.args.get('status')
+    search_column = request.args.get('search_column')
+    search_term = request.args.get('search_term')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
     sort_column = request.args.get('sort')
     sort_order = request.args.get('order', 'asc')
     
-    valid_statuses = ['designing', 'in progress', 'waiting on approval', 'done']
+    # Validate inputs
+    valid_statuses = ['designing', 'in progress', 'waiting on approval', 'completed', 'on hold', 'to be fixed']
     if status and status != 'all' and status not in valid_statuses:
         return jsonify({"error": "Invalid status"}), 400
     
@@ -189,28 +194,42 @@ def get_jobs(current_user):
                     SELECT j.*, u.username as assigned_username 
                     FROM jobs j
                     LEFT JOIN users u ON j.assigned_user_id = u.id
+                    WHERE TRUE
                 """
                 
-                where_clauses = []
                 params = []
                 
+                # Role-based filtering
                 if current_user['role'] not in ['admin', 'manager']:
-                    where_clauses.append("j.assigned_user_id = %s")
+                    base_query += " AND j.assigned_user_id = %s"
                     params.append(current_user['id'])
                 
+                # Status filter
                 if status and status != 'all':
-                    where_clauses.append("j.status = %s")
+                    base_query += " AND j.status = %s"
                     params.append(status)
                 
-                if where_clauses:
-                    base_query += " WHERE " + " AND ".join(where_clauses)
+                # Search filter
+                if search_column and search_term:
+                    base_query += f" AND j.{search_column} ILIKE %s"
+                    params.append(f'%{search_term}%')
                 
+                # Date range filter
+                if start_date:
+                    base_query += " AND j.created_at >= %s"
+                    params.append(start_date)
+                if end_date:
+                    base_query += " AND j.created_at <= %s"
+                    params.append(end_date + " 23:59:59")
+                
+                # Sorting
                 if sort_column:
                     base_query += f" ORDER BY j.{sort_column} {sort_order}"
                 
                 cursor.execute(base_query, params)
                 jobs = cursor.fetchall()
                 
+                # Format dates
                 for job in jobs:
                     for date_field in ['due_date', 'created_at']:
                         if job.get(date_field):
@@ -230,7 +249,7 @@ def create_job(current_user):
     if not all(field in data for field in required_fields):
         return jsonify({"error": "Missing required fields"}), 400
 
-    valid_statuses = ['designing', 'in progress', 'waiting on approval', 'done']
+    valid_statuses = ['designing', 'in progress', 'waiting on approval', 'completed', 'on hold', 'to be fixed']
     if data.get('status') not in valid_statuses:
         return jsonify({"error": "Invalid status"}), 400
 
@@ -275,7 +294,7 @@ def update_job(current_user, job_id):
     data = request.get_json()
     
     if 'status' in data:
-        valid_statuses = ['designing', 'in progress', 'waiting on approval', 'done']
+        valid_statuses = ['designing', 'in progress', 'waiting on approval', 'completed', 'on hold', 'to be fixed']
         if data['status'] not in valid_statuses:
             return jsonify({"error": "Invalid status"}), 400
 
@@ -484,7 +503,7 @@ def initialize_database():
                     due_date DATE,
                     department TEXT,
                     person_in_charge TEXT,
-                    status TEXT CHECK (status IN ('designing', 'in progress', 'waiting on approval', 'done')),
+                    status TEXT CHECK (status IN ('designing', 'in progress', 'waiting on approval', 'completed', 'on hold', 'to be fixed')),
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     assigned_user_id INTEGER REFERENCES users(id)
                 );
