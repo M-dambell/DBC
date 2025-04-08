@@ -78,7 +78,10 @@ def get_user_by_id(user_id):
             return cursor.fetchone()
 
 @app.route('/api/register', methods=['POST'])
+@token_required
+@role_required(['admin'])  # Only admins can register users
 def register():
+    data = request.get_json()
     """Register a new user"""
     data = request.get_json()
     required_fields = ['username', 'password', 'role']
@@ -158,11 +161,12 @@ def login():
         return jsonify({"error": f"Login failed: {str(e)}"}), 500
 
 # --- Job Management ---
+# Get all jobs (accessible to all authenticated users)
 @app.route('/api/jobs', methods=['GET'])
 @token_required
 @role_required(['admin', 'manager', 'user'])
 def get_jobs(current_user):
-    """Get jobs list with combined filtering"""
+    """Get jobs list - all users can view all jobs"""
     status = request.args.get('status')
     search_column = request.args.get('search_column')
     search_term = request.args.get('search_term')
@@ -171,22 +175,6 @@ def get_jobs(current_user):
     sort_column = request.args.get('sort')
     sort_order = request.args.get('order', 'asc')
     
-    # Validate inputs
-    valid_statuses = ['designing', 'in progress', 'waiting on approval', 'completed', 'on hold', 'to be fixed']
-    if status and status != 'all' and status not in valid_statuses:
-        return jsonify({"error": "Invalid status"}), 400
-    
-    valid_columns = [
-        'id', 'name', 'job_num', 'qty', 'details_of_job',
-        'due_date', 'department', 'person_in_charge', 'status', 'created_at'
-    ]
-    
-    if sort_column and sort_column not in valid_columns:
-        return jsonify({"error": "Invalid sort column"}), 400
-    
-    if sort_order.lower() not in ['asc', 'desc']:
-        return jsonify({"error": "Invalid sort order"}), 400
-
     try:
         with get_db_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -199,13 +187,8 @@ def get_jobs(current_user):
                 
                 params = []
                 
-                # Role-based filtering
-                if current_user['role'] not in ['admin', 'manager']:
-                    base_query += " AND j.assigned_user_id = %s"
-                    params.append(current_user['id'])
-                
                 # Status filter
-                if status and status != 'all':
+                if status and status != "all":
                     base_query += " AND j.status = %s"
                     params.append(status)
                 
@@ -229,7 +212,6 @@ def get_jobs(current_user):
                 cursor.execute(base_query, params)
                 jobs = cursor.fetchall()
                 
-                # Format dates
                 for job in jobs:
                     for date_field in ['due_date', 'created_at']:
                         if job.get(date_field):
@@ -237,13 +219,15 @@ def get_jobs(current_user):
                 
                 return jsonify(jobs)
     except Exception as e:
-        return jsonify({"error": f"Failed to fetch jobs: {str(e)}"}), 500
+        return jsonify({"error": f"Failed to fetch jobs: {str(e)}"}), 500    
 
+
+# Create job (admin only)
 @app.route('/api/jobs', methods=['POST'])
 @token_required
-@role_required(['admin', 'manager'])
+@role_required(['admin'])
 def create_job(current_user):
-    """Create a new job"""
+    """Create a new job (admin only)"""
     data = request.get_json()
     required_fields = ['name', 'job_num', 'status', 'assigned_user_id']
     if not all(field in data for field in required_fields):
@@ -286,11 +270,13 @@ def create_job(current_user):
     except Exception as e:
         return jsonify({"error": f"Failed to create job: {str(e)}"}), 500
 
+
+# Update job (admin only)
 @app.route('/api/jobs/<int:job_id>', methods=['PUT'])
 @token_required
-@role_required(['admin', 'manager'])
+@role_required(['admin'])
 def update_job(current_user, job_id):
-    """Update job details"""
+    """Update job details (admin only)"""
     data = request.get_json()
     
     if 'status' in data:

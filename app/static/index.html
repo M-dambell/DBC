@@ -13,6 +13,11 @@
             background-color: #f5f5f5;
         }
 
+        .hidden {
+            display: none;
+        }
+
+        /* Auth Container Styles */
         .auth-container {
             max-width: 400px;
             margin: 50px auto;
@@ -20,26 +25,6 @@
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .auth-tabs {
-            display: flex;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .auth-tab {
-            flex: 1;
-            text-align: center;
-            padding: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .auth-tab.active {
-            border-bottom: 3px solid #3498db;
-            color: #3498db;
-            font-weight: bold;
         }
 
         .auth-form {
@@ -76,6 +61,26 @@
             font-size: 14px;
         }
 
+        /* Admin Register Modal */
+        #admin-register-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #admin-register-container .auth-container {
+            margin: 0;
+            position: relative;
+        }
+
+        /* App Container Styles */
         #app-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -102,32 +107,7 @@
             align-items: center;
         }
 
-        select, button, input {
-            padding: 8px 12px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-
-        button {
-            background: #3498db;
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        button:hover {
-            background: #2980b9;
-        }
-
-        button.danger {
-            background: #e74c3c;
-        }
-
-        button.danger:hover {
-            background: #c0392b;
-        }
-
+        /* Table Styles */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -157,35 +137,64 @@
             background-color: #e9e9e9;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.4);
+        /* Status Badges */
+        .status-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: capitalize;
+            display: inline-block;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .modal-content {
-            background-color: white;
-            margin: 10% auto;
-            padding: 20px;
-            width: 50%;
-            max-width: 600px;
-            border-radius: 5px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
+        .status-designing { background-color: #7E57C2; color: white; }
+        .status-in-progress { background-color: #42A5F5; color: white; }
+        .status-waiting-on-approval { background-color: #FFA726; color: white; }
+        .status-completed { background-color: #66BB6A; color: white; }
+        .status-to-be-fixed { background-color: #EF5350; color: white; }
+        .status-on-hold { background-color: #FFCA28; color: white; }
 
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
+        /* Buttons */
+        button {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: none;
             cursor: pointer;
+            transition: background 0.2s;
         }
 
+        button.primary {
+            background: #3498db;
+            color: white;
+        }
+
+        button.primary:hover {
+            background: #2980b9;
+        }
+
+        button.danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        button.danger:hover {
+            background: #c0392b;
+        }
+
+        button.secondary {
+            background: #f0f0f0;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        button.secondary:hover {
+            background: #e0e0e0;
+        }
+
+        /* Loading Indicator */
         .loading {
             display: inline-block;
             width: 20px;
@@ -201,118 +210,36 @@
             to { transform: rotate(360deg); }
         }
 
-        .hidden {
+        #auth-container, #app-container, #admin-register-container {
+        display: none;
+        }
+        #auth-container.hidden, 
+        #app-container.hidden, 
+        #admin-register-container.hidden {
             display: none;
         }
-
-        .admin-only {
-            display: none;
-        }
-
-        .user-role {
-            margin-left: auto;
-            font-weight: bold;
-            color: #3498db;
-        }
-
-        .sort-indicator {
-            margin-left: 5px;
-            font-size: 12px;
-            position: absolute;
-            right: 5px;
-        }
-
-        .status-badge {
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-            text-transform: capitalize;
-            display: inline-block;
-            max-width: 150px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .status-designing {
-            background-color: #7E57C2;
-            color: white;
-        }
-
-        .status-in-progress {
-            background-color: #42A5F5;
-            color: white;
-        }
-
-        .status-waiting-on-approval {
-            background-color: #FFA726;
-            color: white;
-        }
-
-        .status-completed {
-            background-color: #66BB6A;
-            color: white;
-        }
-
-        .status-to-be-fixed {
-            background-color: #EF5350;
-            color: white;
-        }
-
-        .status-on-hold {
-            background-color: #FFCA28;
-            color: white;
-        }
-
-        form label {
+        #auth-container:not(.hidden), 
+        #app-container:not(.hidden), 
+        #admin-register-container:not(.hidden) {
             display: block;
-            margin-bottom: 10px;
-        }
-        
-        form input, form select, form textarea {
-            width: 100%;
-            padding: 8px;
-            margin-top: 4px;
-            box-sizing: border-box;
-        }
-        
-        form textarea {
-            height: 80px;
-            resize: vertical;
         }
     </style>
 </head>
 <body>
-    <!-- Authentication UI -->
-    <div id="auth-container" class="auth-container">
-        <div class="auth-tabs">
-            <div class="auth-tab active" onclick="showTab('login')">Login</div>
-            <div class="auth-tab" onclick="showTab('register')">Register</div>
+    <!-- Login View -->
+    <div id="auth-container">
+        <div class="auth-container">
+            <h2>Login</h2>
+            <form id="login-form" class="auth-form">
+                <input type="text" id="login-username" placeholder="Username" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <div id="login-error" class="error-message"></div>
+                <button type="submit" class="primary">Login</button>
+            </form>
         </div>
-        
-        <!-- Login Form -->
-        <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
-            <input type="text" id="login-username" placeholder="Username" required>
-            <input type="password" id="login-password" placeholder="Password" required>
-            <div id="login-error" class="error-message"></div>
-            <button type="submit">Login</button>
-        </form>
-        
-        <!-- Registration Form -->
-        <form id="register-form" class="auth-form hidden" onsubmit="handleRegister(event)">
-            <input type="text" id="reg-username" placeholder="Username" required>
-            <input type="password" id="reg-password" placeholder="Password" required>
-            <select id="reg-role" required>
-                <option value="user">Regular User</option>
-                <option value="manager">Manager</option>
-                <option value="admin">Admin</option>
-            </select>
-            <div id="register-error" class="error-message"></div>
-            <button type="submit">Register</button>
-        </form>
     </div>
 
-    <!-- Main App UI -->
+    <!-- Main App View -->
     <div id="app-container" class="hidden">
         <div class="header">
             <h1>Job Tracker</h1>
@@ -342,18 +269,17 @@
                     <option value="status">Status</option>
                 </select>
                 <input type="text" id="searchInput" placeholder="Enter search term...">
-                <button id="searchButton">Search</button>
+                <button id="searchButton" class="primary">Search</button>
             </div>
            
             <div class="date-filter">
                 <label>From: <input type="date" id="startDate"></label>
                 <label>To: <input type="date" id="endDate"></label>
-                <button id="dateFilterButton">Filter Dates</button>
+                <button id="dateFilterButton" class="primary">Filter Dates</button>
             </div>
             
-            <button id="createJobButton">Create New Job</button>
-            <button class="admin-only" id="adminPanelButton">Admin Panel</button>
-            <button id="resetFilters">Reset Filters</button>
+            <button id="createJobButton" class="primary">Create New Job</button>
+            <button id="resetFilters" class="secondary">Reset Filters</button>
         </div>
 
         <table id="jobTable">
@@ -372,68 +298,26 @@
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody>
-                <!-- Jobs will be inserted here dynamically -->
-            </tbody>
+            <tbody></tbody>
         </table>
+    </div>
 
-        <!-- Edit Modal -->
-        <div id="editModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal()">&times;</span>
-                <h2>Edit Job</h2>
-                <form id="editForm">
-                    <input type="hidden" id="editId">
-                    <label>Name: <input type="text" id="editName" required></label>
-                    <label>Job Num: <input type="text" id="editJobNum" required></label>
-                    <label>Status: 
-                        <select id="editStatus" required>
-                            <option value="designing">Designing</option>
-                            <option value="in progress">In Progress</option>
-                            <option value="waiting on approval">Waiting Approval</option>
-                            <option value="completed">Completed</option>
-                            <option value="on hold">On Hold</option>
-                            <option value="to be fixed">To Be Fixed</option>
-                        </select>
-                    </label>
-                    <label>Created At: <span id="editCreatedAt">N/A</span></label>
-                    <button type="button" onclick="saveJob()">Save</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Create Modal -->
-        <div id="createModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeCreateModal()">&times;</span>
-                <h2>Create New Job</h2>
-                <form id="createForm">
-                    <label>Name: <input type="text" id="createName" required></label>
-                    <label>Job Number: <input type="text" id="createJobNum" required></label>
-                    <label>Quantity: <input type="number" id="createQty" required min="1" value="1"></label>
-                    <label>Details: <textarea id="createDetails"></textarea></label>
-                    <label>Due Date: <input type="date" id="createDueDate"></label>
-                    <label>Department: 
-                        <select id="createDepartment" required>
-                            <option value="Production">Production</option>
-                            <option value="digital Print">Digital Print</option>
-                            <option value="screen">Screen</option>
-                        </select>
-                    </label>
-                    <label>Person in Charge: <input type="text" id="createPerson"></label>
-                    <label>Status: 
-                        <select id="createStatus" required>
-                            <option value="designing">Designing</option>
-                            <option value="in progress">In Progress</option>
-                            <option value="waiting on approval">Waiting Approval</option>
-                            <option value="completed">Completed</option>
-                            <option value="on hold">On Hold</option>
-                            <option value="to be fixed">To Be Fixed</option>
-                        </select>
-                    </label>
-                    <button type="button" onclick="createJob()">Create Job</button>
-                </form>
-            </div>
+    <!-- Admin Register View -->
+    <div id="admin-register-container" class="hidden">
+        <div class="auth-container">
+            <h2>Register New User</h2>
+            <form id="register-form" class="auth-form">
+                <input type="text" id="reg-username" placeholder="Username" required>
+                <input type="password" id="reg-password" placeholder="Password" required>
+                <select id="reg-role" required>
+                    <option value="user">Regular User</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Admin</option>
+                </select>
+                <div id="register-error" class="error-message"></div>
+                <button type="submit" class="primary">Register</button>
+                <button type="button" class="secondary" onclick="showAppView()">Back to App</button>
+            </form>
         </div>
     </div>
 
@@ -457,79 +341,54 @@
             }
         };
 
-        // Initialize the app
-        function initApp() {
-            const token = localStorage.getItem('token');
-            const user = localStorage.getItem('user');
-            
-            if (token && user) {
-                try {
-                    currentState.currentUser = JSON.parse(user);
-                    showAppUI();
-                    loadJobs();
-                } catch (e) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    showAuthUI();
-                }
-            } else {
-                showAuthUI();
-            }
+        // View Management
+        function showAuthView() {
+            document.getElementById('auth-container').classList.remove('hidden');
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('admin-register-container').classList.add('hidden');
+        }
 
-            // Set up event listeners
-            document.getElementById('statusFilter').addEventListener('change', updateStatusFilter);
-            document.getElementById('searchInput').addEventListener('input', function() {
-                clearTimeout(searchDebounce);
-                searchDebounce = setTimeout(updateSearch, 300);
-            });
-            document.getElementById('searchColumn').addEventListener('change', updateSearch);
-            document.getElementById('dateFilterButton').addEventListener('click', updateDateFilter);
-            document.getElementById('createJobButton').addEventListener('click', openCreateModal);
-            document.getElementById('resetFilters').addEventListener('click', resetFilters);
+        function showAppView() {
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            document.getElementById('admin-register-container').classList.add('hidden');
             
-            // Admin button only shown to admins
-            const adminPanelButton = document.getElementById('adminPanelButton');
-            if (adminPanelButton) {
-                adminPanelButton.addEventListener('click', adminFunction);
+            if (currentState.currentUser) {
+                const isAdmin = currentState.currentUser.role === 'admin';
+                document.getElementById('current-user-role').textContent = 
+                    `Logged in as ${currentState.currentUser.username} (${currentState.currentUser.role})`;
+                
+                document.getElementById('createJobButton').style.display = isAdmin ? 'inline-block' : 'none';
+                
+                if (isAdmin && !document.getElementById('register-user-btn')) {
+                    const btn = document.createElement('button');
+                    btn.id = 'register-user-btn';
+                    btn.className = 'primary';
+                    btn.textContent = 'Register User';
+                    btn.onclick = showRegisterView;
+                    document.querySelector('.header').appendChild(btn);
+                }
             }
+        }
 
-            // Close modals when clicking outside
-            window.addEventListener('click', function(event) {
-                if (event.target === document.getElementById('editModal')) {
-                    closeModal();
-                }
-                if (event.target === document.getElementById('createModal')) {
-                    closeCreateModal();
-                }
-            });
+        function showRegisterView() {
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('admin-register-container').classList.remove('hidden');
         }
 
         // Auth Functions
-        function showTab(tabName) {
-            document.querySelectorAll('.auth-tab').forEach(tab => {
-                tab.classList.toggle('active', tab.textContent.toLowerCase().includes(tabName));
-            });
-            document.getElementById('login-form').classList.toggle('hidden', tabName !== 'login');
-            document.getElementById('register-form').classList.toggle('hidden', tabName !== 'register');
-            clearAuthErrors();
-        }
-
-        function clearAuthErrors() {
-            document.getElementById('login-error').textContent = '';
-            document.getElementById('register-error').textContent = '';
-        }
-
         async function handleLogin(event) {
             event.preventDefault();
-            const username = document.getElementById('login-username').value;
-            const password = document.getElementById('login-password').value;
-
             try {
                 setLoading(true);
                 const response = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({
+                        username: document.getElementById('login-username').value,
+                        password: document.getElementById('login-password').value
+                    })
                 });
 
                 const data = await response.json();
@@ -538,13 +397,13 @@
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     currentState.currentUser = data.user;
-                    showAppUI();
+                    showAppView();
                     loadJobs();
                 } else {
                     document.getElementById('login-error').textContent = data.error || 'Login failed';
                 }
             } catch (error) {
-                document.getElementById('login-error').textContent = 'Network error during login';
+                document.getElementById('login-error').textContent = 'Login failed';
             } finally {
                 setLoading(false);
             }
@@ -552,32 +411,36 @@
 
         async function handleRegister(event) {
             event.preventDefault();
-            const username = document.getElementById('reg-username').value;
-            const password = document.getElementById('reg-password').value;
-            const role = document.getElementById('reg-role').value;
+            if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
+                alert('Only admins can register users');
+                return;
+            }
 
             try {
                 setLoading(true);
-                document.getElementById('register-error').textContent = '';
-                
                 const response = await fetch(`${API_BASE}/register`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password, role })
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        username: document.getElementById('reg-username').value,
+                        password: document.getElementById('reg-password').value,
+                        role: document.getElementById('reg-role').value
+                    })
                 });
 
                 const data = await response.json();
-                
                 if (response.ok && data.success) {
-                    alert('Registration successful! Please login with your new account.');
-                    showTab('login');
-                    document.getElementById('login-username').value = username;
-                    document.getElementById('login-password').value = '';
+                    alert('User registered successfully');
+                    document.getElementById('register-form').reset();
+                    showAppView();
                 } else {
                     document.getElementById('register-error').textContent = data.error || 'Registration failed';
                 }
             } catch (error) {
-                document.getElementById('register-error').textContent = 'Network error during registration';
+                document.getElementById('register-error').textContent = 'Registration failed';
             } finally {
                 setLoading(false);
             }
@@ -587,34 +450,10 @@
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             currentState.currentUser = null;
-            showAuthUI();
+            showAuthView();
         }
 
-        function showAuthUI() {
-            document.getElementById('auth-container').classList.remove('hidden');
-            document.getElementById('app-container').classList.add('hidden');
-            document.getElementById('login-username').value = '';
-            document.getElementById('login-password').value = '';
-            clearAuthErrors();
-        }
-
-        function showAppUI() {
-            document.getElementById('auth-container').classList.add('hidden');
-            document.getElementById('app-container').classList.remove('hidden');
-            
-            if (currentState.currentUser) {
-                document.getElementById('current-user-role').textContent = 
-                    `Logged in as ${currentState.currentUser.username} (${currentState.currentUser.role})`;
-                
-                if (currentState.currentUser.role === 'admin') {
-                    document.querySelectorAll('.admin-only').forEach(el => {
-                        el.style.display = 'inline-block';
-                    });
-                }
-            }
-        }
-
-        // Job Management Functions
+        // Job Management
         function setLoading(isLoading) {
             currentState.isLoading = isLoading;
             const searchButton = document.getElementById('searchButton');
@@ -624,100 +463,21 @@
             }
         }
 
-        function showError(message) {
-            const tbody = document.getElementById('jobTable').querySelector('tbody');
-            if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="11" style="color: red; text-align: center;">${message}</td></tr>`;
-            }
-        }
-
-        async function fetchJobs(url = `${API_BASE}/jobs`) {
-            const token = localStorage.getItem('token');
-            const response = await fetch(url, {
-                headers: { 
-                    'Authorization': `Bearer ${token || ''}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            return await response.json();
-        }
-
-        function updateStatusFilter() {
-            currentState.filters.status = document.getElementById('statusFilter').value;
-            loadJobs();
-        }
-
-        function updateSearch() {
-            currentState.filters.searchTerm = document.getElementById('searchInput').value.trim();
-            currentState.filters.searchColumn = document.getElementById('searchColumn').value;
-            loadJobs();
-        }
-
-        function updateDateFilter() {
-            currentState.filters.startDate = document.getElementById('startDate').value;
-            currentState.filters.endDate = document.getElementById('endDate').value;
-            
-            // Validate date range
-            if (currentState.filters.startDate && currentState.filters.endDate && 
-                currentState.filters.startDate > currentState.filters.endDate) {
-                alert("End date cannot be before start date");
-                return;
-            }
-            
-            loadJobs();
-        }
-
-        function resetFilters() {
-            // Reset all filters
-            document.getElementById('statusFilter').value = 'all';
-            document.getElementById('searchInput').value = '';
-            document.getElementById('startDate').value = '';
-            document.getElementById('endDate').value = '';
-            
-            // Reset state
-            currentState.filters = {
-                status: 'all',
-                searchColumn: 'name',
-                searchTerm: '',
-                startDate: '',
-                endDate: ''
-            };
-            
-            // Reset sorting
-            currentState.sortColumn = null;
-            currentState.sortDirection = 'asc';
-            
-            // Update sort indicators
-            document.querySelectorAll('.sort-indicator').forEach(indicator => {
-                indicator.textContent = '↕';
-            });
-            
-            loadJobs();
-        }
-
         async function loadJobs() {
             try {
                 setLoading(true);
                 
                 const queryParams = [];
                 
-                // Status filter
                 if (currentState.filters.status && currentState.filters.status !== 'all') {
                     queryParams.push(`status=${encodeURIComponent(currentState.filters.status)}`);
                 }
                 
-                // Search filter
                 if (currentState.filters.searchTerm) {
                     queryParams.push(`search_column=${encodeURIComponent(currentState.filters.searchColumn)}`);
                     queryParams.push(`search_term=${encodeURIComponent(currentState.filters.searchTerm)}`);
                 }
                 
-                // Date filters
                 if (currentState.filters.startDate) {
                     queryParams.push(`start_date=${encodeURIComponent(currentState.filters.startDate)}`);
                 }
@@ -725,14 +485,23 @@
                     queryParams.push(`end_date=${encodeURIComponent(currentState.filters.endDate)}`);
                 }
                 
-                // Sorting
                 if (currentState.sortColumn) {
                     queryParams.push(`sort=${encodeURIComponent(currentState.sortColumn)}`);
                     queryParams.push(`order=${encodeURIComponent(currentState.sortDirection)}`);
                 }
                 
                 const queryString = queryParams.length ? `?${queryParams.join('&')}` : '';
-                const jobs = await fetchJobs(`${API_BASE}/jobs${queryString}`);
+                const response = await fetch(`${API_BASE}/jobs${queryString}`, {
+                    headers: { 
+                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const jobs = await response.json();
                 renderJobs(jobs);
             } catch (error) {
                 console.error('Failed to load jobs:', error);
@@ -755,6 +524,7 @@
             }
 
             let tableHTML = '';
+            const isAdmin = currentState.currentUser && currentState.currentUser.role === 'admin';
             
             jobs.forEach(job => {
                 const statusClass = `status-${job.status.replace(/\s+/g, '-').toLowerCase()}`;
@@ -768,12 +538,13 @@
                         <td>${job.due_date || 'N/A'}</td>
                         <td>${job.department}</td>
                         <td>${job.person_in_charge || 'N/A'}</td>
-                        <td><span class="status-badge ${statusClass}" data-status="${job.status}">${job.status}</span></td>
+                        <td><span class="status-badge ${statusClass}">${job.status}</span></td>
                         <td>${job.created_at || 'N/A'}</td>
                         <td>
-                            <button onclick="openEditModal(${JSON.stringify(job).replace(/"/g, '&quot;')})">Edit</button>
-                            ${currentState.currentUser && currentState.currentUser.role === 'admin' ? 
-                            `<button class="danger" onclick="deleteJob(${job.id})">Delete</button>` : ''}
+                            ${isAdmin ? `
+                                <button onclick="openEditModal(${JSON.stringify(job).replace(/"/g, '&quot;')})">Edit</button>
+                                <button class="danger" onclick="deleteJob(${job.id})">Delete</button>
+                            ` : '<span>View Only</span>'}
                         </td>
                     </tr>`;
             });
@@ -781,7 +552,98 @@
             tbody.innerHTML = tableHTML;
         }
 
-        function sortJobs(column) {
+        function showError(message) {
+            const tbody = document.getElementById('jobTable').querySelector('tbody');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="11" style="color: red; text-align: center;">${message}</td></tr>`;
+            }
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up form handlers
+            document.getElementById('login-form').onsubmit = handleLogin;
+            document.getElementById('register-form').onsubmit = handleRegister;
+            
+            // Set up filter controls
+            document.getElementById('statusFilter').addEventListener('change', function() {
+                currentState.filters.status = this.value;
+                loadJobs();
+            });
+
+            document.getElementById('searchInput').addEventListener('input', function() {
+                clearTimeout(searchDebounce);
+                searchDebounce = setTimeout(function() {
+                    currentState.filters.searchTerm = this.value.trim();
+                    loadJobs();
+                }.bind(this), 300);
+            });
+
+            document.getElementById('searchColumn').addEventListener('change', function() {
+                currentState.filters.searchColumn = this.value;
+                if (currentState.filters.searchTerm) {
+                    loadJobs();
+                }
+            });
+
+            document.getElementById('dateFilterButton').addEventListener('click', function() {
+                currentState.filters.startDate = document.getElementById('startDate').value;
+                currentState.filters.endDate = document.getElementById('endDate').value;
+                
+                if (currentState.filters.startDate && currentState.filters.endDate && 
+                    currentState.filters.startDate > currentState.filters.endDate) {
+                    alert("End date cannot be before start date");
+                    return;
+                }
+                
+                loadJobs();
+            });
+
+            document.getElementById('resetFilters').addEventListener('click', function() {
+                document.getElementById('statusFilter').value = 'all';
+                document.getElementById('searchInput').value = '';
+                document.getElementById('startDate').value = '';
+                document.getElementById('endDate').value = '';
+                
+                currentState.filters = {
+                    status: 'all',
+                    searchColumn: 'name',
+                    searchTerm: '',
+                    startDate: '',
+                    endDate: ''
+                };
+                
+                currentState.sortColumn = null;
+                currentState.sortDirection = 'asc';
+                
+                document.querySelectorAll('.sort-indicator').forEach(indicator => {
+                    indicator.textContent = '↕';
+                });
+                
+                loadJobs();
+            });
+
+            // Check existing session
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            if (token && user) {
+                try {
+                    currentState.currentUser = JSON.parse(user);
+                    showAppView();
+                    loadJobs();
+                } catch (e) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    showAuthView();
+                }
+            } else {
+                showAuthView();
+            }
+        });
+
+        // Global functions
+        window.sortJobs = function(column) {
             if (currentState.isLoading) return;
             
             if (currentState.sortColumn === column) {
@@ -791,7 +653,6 @@
                 currentState.sortDirection = 'asc';
             }
             
-            // Update sort indicators
             document.querySelectorAll('.sort-indicator').forEach(indicator => {
                 indicator.textContent = '↕';
             });
@@ -805,139 +666,40 @@
             }
             
             loadJobs();
-        }
+        };
 
-        // Modal Functions
-        function openEditModal(job) {
-            document.getElementById('editId').value = job.id;
-            document.getElementById('editName').value = job.name;
-            document.getElementById('editJobNum').value = job.job_num;
-            document.getElementById('editStatus').value = job.status;
-            document.getElementById('editCreatedAt').textContent = job.created_at || 'N/A';
-            document.getElementById('editModal').style.display = 'block';
-        }
-
-        function closeModal() {
-            document.getElementById('editModal').style.display = 'none';
-        }
-
-        function openCreateModal() {
-            document.getElementById('createForm').reset();
-            document.getElementById('createModal').style.display = 'block';
-        }
-
-        function closeCreateModal() {
-            document.getElementById('createModal').style.display = 'none';
-        }
-
-        async function saveJob() {
-            const jobId = document.getElementById('editId').value;
-            try {
-                setLoading(true);
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE}/jobs/${jobId}`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        name: document.getElementById('editName').value,
-                        job_num: document.getElementById('editJobNum').value,
-                        status: document.getElementById('editStatus').value
-                    })
-                });
-                
-                if (!response.ok) throw new Error('Failed to update job');
-                
-                closeModal();
-                await loadJobs();
-            } catch (error) {
-                console.error('Error saving job:', error);
-                alert(`Error: ${error.message}`);
-            } finally {
-                setLoading(false);
+        window.openEditModal = function(job) {
+            if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
+                alert('Only admins can edit jobs');
+                return;
             }
-        }
+            // Implementation would go here
+            console.log('Edit job:', job);
+        };
 
-        async function createJob() {
-            try {
-                setLoading(true);
-                const token = localStorage.getItem('token');
-                
-                // Validate required fields
-                const requiredFields = ['createName', 'createJobNum', 'createQty', 'createDepartment', 'createStatus'];
-                for (const fieldId of requiredFields) {
-                    if (!document.getElementById(fieldId).value) {
-                        throw new Error(`Missing required field: ${fieldId.replace('create', '')}`);
-                    }
-                }
-
-                const response = await fetch(`${API_BASE}/jobs`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        name: document.getElementById('createName').value,
-                        job_num: document.getElementById('createJobNum').value,
-                        qty: parseInt(document.getElementById('createQty').value) || 1,
-                        details_of_job: document.getElementById('createDetails').value,
-                        due_date: document.getElementById('createDueDate').value || null,
-                        department: document.getElementById('createDepartment').value,
-                        person_in_charge: document.getElementById('createPerson').value,
-                        status: document.getElementById('createStatus').value,
-                        assigned_user_id: currentState.currentUser.id
-                    })
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to create job');
-                }
-                
-                closeCreateModal();
-                await loadJobs();
-            } catch (error) {
-                console.error('Error creating job:', error);
-                alert(`Error: ${error.message}`);
-            } finally {
-                setLoading(false);
+        window.deleteJob = function(jobId) {
+            if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
+                alert('Only admins can delete jobs');
+                return;
             }
-        }
-
-        async function deleteJob(jobId) {
+            
             if (!confirm('Are you sure you want to delete this job?')) return;
             
-            try {
-                setLoading(true);
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE}/jobs/${jobId}`, {
-                    method: 'DELETE',
-                    headers: { 
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
+            fetch(`${API_BASE}/jobs/${jobId}`, {
+                method: 'DELETE',
+                headers: { 
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+            .then(response => {
                 if (!response.ok) throw new Error('Failed to delete job');
-                
-                await loadJobs();
-            } catch (error) {
+                loadJobs();
+            })
+            .catch(error => {
                 console.error('Error deleting job:', error);
                 alert(`Error: ${error.message}`);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        function adminFunction() {
-            alert('Admin function triggered!');
-            // Add your admin-specific functionality here
-        }
-
-        // Initialize the app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', initApp);
+            });
+        };
     </script>
 </body>
 </html>
