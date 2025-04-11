@@ -80,8 +80,7 @@ def get_user_by_id(user_id):
 @app.route('/api/register', methods=['POST'])
 @token_required
 @role_required(['admin'])  # Only admins can register users
-def register():
-    data = request.get_json()
+def register(current_user):
     """Register a new user"""
     data = request.get_json()
     required_fields = ['username', 'password', 'role']
@@ -161,10 +160,8 @@ def login():
         return jsonify({"error": f"Login failed: {str(e)}"}), 500
 
 # --- Job Management ---
-# Get all jobs (accessible to all authenticated users)
 @app.route('/api/jobs', methods=['GET'])
 @token_required
-@role_required(['admin', 'manager', 'user'])
 def get_jobs(current_user):
     """Get jobs list - all users can view all jobs"""
     status = request.args.get('status')
@@ -221,8 +218,6 @@ def get_jobs(current_user):
     except Exception as e:
         return jsonify({"error": f"Failed to fetch jobs: {str(e)}"}), 500    
 
-
-# Create job (admin only)
 @app.route('/api/jobs', methods=['POST'])
 @token_required
 @role_required(['admin'])
@@ -270,8 +265,6 @@ def create_job(current_user):
     except Exception as e:
         return jsonify({"error": f"Failed to create job: {str(e)}"}), 500
 
-
-# Update job (admin only)
 @app.route('/api/jobs/<int:job_id>', methods=['PUT'])
 @token_required
 @role_required(['admin'])
@@ -349,93 +342,6 @@ def delete_job(current_user, job_id):
                 return jsonify({"message": "Job deleted successfully"})
     except Exception as e:
         return jsonify({"error": f"Failed to delete job: {str(e)}"}), 500
-
-@app.route('/api/jobs/search', methods=['GET'])
-@token_required
-@role_required(['admin', 'manager', 'user'])
-def search_jobs(current_user):
-    """Search jobs by various criteria"""
-    column = request.args.get('column')
-    term = request.args.get('term')
-    
-    if not column or not term:
-        return jsonify({"error": "Missing search parameters"}), 400
-    
-    valid_columns = ['name', 'job_num', 'department', 'person_in_charge', 'status']
-    if column not in valid_columns:
-        return jsonify({"error": "Invalid search column"}), 400
-    
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                if current_user['role'] in ['admin', 'manager']:
-                    cursor.execute(f"""
-                        SELECT j.*, u.username as assigned_username 
-                        FROM jobs j
-                        LEFT JOIN users u ON j.assigned_user_id = u.id
-                        WHERE j.{column} ILIKE %s
-                        ORDER BY j.created_at DESC
-                    """, (f'%{term}%',))
-                else:
-                    cursor.execute(f"""
-                        SELECT j.*, u.username as assigned_username 
-                        FROM jobs j
-                        LEFT JOIN users u ON j.assigned_user_id = u.id
-                        WHERE j.{column} ILIKE %s AND j.assigned_user_id = %s
-                        ORDER BY j.created_at DESC
-                    """, (f'%{term}%', current_user['id']))
-                
-                jobs = cursor.fetchall()
-                for job in jobs:
-                    for date_field in ['due_date', 'created_at']:
-                        if job.get(date_field):
-                            job[date_field] = job[date_field].isoformat()
-                return jsonify(jobs)
-    except Exception as e:
-        return jsonify({"error": f"Search failed: {str(e)}"}), 500
-
-@app.route('/api/jobs/filter-by-date', methods=['GET'])
-@token_required
-@role_required(['admin', 'manager', 'user'])
-def filter_jobs_by_date(current_user):
-    """Filter jobs by date range"""
-    start_date = request.args.get('start')
-    end_date = request.args.get('end')
-    
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                query = """
-                    SELECT j.*, u.username as assigned_username 
-                    FROM jobs j
-                    LEFT JOIN users u ON j.assigned_user_id = u.id
-                    WHERE TRUE
-                """
-                params = []
-                
-                if start_date:
-                    query += " AND j.created_at >= %s"
-                    params.append(start_date)
-                if end_date:
-                    query += " AND j.created_at <= %s"
-                    params.append(end_date + " 23:59:59")
-                
-                if current_user['role'] not in ['admin', 'manager']:
-                    query += " AND j.assigned_user_id = %s"
-                    params.append(current_user['id'])
-                
-                query += " ORDER BY j.created_at DESC"
-                cursor.execute(query, params)
-                jobs = cursor.fetchall()
-                
-                for job in jobs:
-                    for date_field in ['due_date', 'created_at']:
-                        if job.get(date_field):
-                            job[date_field] = job[date_field].isoformat()
-                
-                return jsonify(jobs)
-    except Exception as e:
-        return jsonify({"error": f"Date filter failed: {str(e)}"}), 500
 
 # --- Frontend Serving ---
 @app.route('/')

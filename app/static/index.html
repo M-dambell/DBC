@@ -210,12 +210,72 @@
             to { transform: rotate(360deg); }
         }
 
-        #auth-container, #app-container, #admin-register-container {
-        display: none;
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
         }
-        #auth-container.hidden, 
-        #app-container.hidden, 
-        #admin-register-container.hidden {
+
+        .modal:not(.hidden) {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        #auth-container, #app-container, #admin-register-container {
             display: none;
         }
         #auth-container:not(.hidden), 
@@ -310,13 +370,114 @@
                 <input type="text" id="reg-username" placeholder="Username" required>
                 <input type="password" id="reg-password" placeholder="Password" required>
                 <select id="reg-role" required>
-                    <option value="user">Regular User</option>
+                    <option value="user">User</option>
                     <option value="manager">Manager</option>
                     <option value="admin">Admin</option>
                 </select>
                 <div id="register-error" class="error-message"></div>
                 <button type="submit" class="primary">Register</button>
                 <button type="button" class="secondary" onclick="showAppView()">Back to App</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Job Modal -->
+    <div id="create-job-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Create New Job</h2>
+            <form id="create-job-form">
+                <div class="form-group">
+                    <label for="job-name">Name:</label>
+                    <input type="text" id="job-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="job-number">Job Number:</label>
+                    <input type="text" id="job-number" required>
+                </div>
+                <div class="form-group">
+                    <label for="job-quantity">Quantity:</label>
+                    <input type="number" id="job-quantity" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="job-details">Details:</label>
+                    <textarea id="job-details"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="job-due-date">Due Date:</label>
+                    <input type="date" id="job-due-date">
+                </div>
+                <div class="form-group">
+                    <label for="job-department">Department:</label>
+                    <input type="text" id="job-department">
+                </div>
+                <div class="form-group">
+                    <label for="job-person">Person in Charge:</label>
+                    <input type="text" id="job-person">
+                </div>
+                <div class="form-group">
+                    <label for="job-status">Status:</label>
+                    <select id="job-status" required>
+                        <option value="designing">Designing</option>
+                        <option value="in progress">In Progress</option>
+                        <option value="waiting on approval">Waiting Approval</option>
+                        <option value="completed">Completed</option>
+                        <option value="on hold">On Hold</option>
+                        <option value="to be fixed">To Be Fixed</option>
+                    </select>
+                </div>
+                <button type="submit" class="primary">Create Job</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Job Modal -->
+    <div id="edit-job-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Edit Job</h2>
+            <form id="edit-job-form">
+                <input type="hidden" id="edit-job-id">
+                <div class="form-group">
+                    <label for="edit-job-name">Name:</label>
+                    <input type="text" id="edit-job-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-job-number">Job Number:</label>
+                    <input type="text" id="edit-job-number" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-job-quantity">Quantity:</label>
+                    <input type="number" id="edit-job-quantity" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="edit-job-details">Details:</label>
+                    <textarea id="edit-job-details"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-job-due-date">Due Date:</label>
+                    <input type="date" id="edit-job-due-date">
+                </div>
+                <div class="form-group">
+                    <label for="edit-job-department">Department:</label>
+                    <input type="text" id="edit-job-department">
+                </div>
+                <div class="form-group">
+                    <label for="edit-job-person">Person in Charge:</label>
+                    <input type="text" id="edit-job-person">
+                </div>
+                <div class="form-group">
+                    <label for="edit-job-status">Status:</label>
+                    <select id="edit-job-status" required>
+                        <option value="designing">Designing</option>
+                        <option value="in progress">In Progress</option>
+                        <option value="waiting on approval">Waiting Approval</option>
+                        <option value="completed">Completed</option>
+                        <option value="on hold">On Hold</option>
+                        <option value="to be fixed">To Be Fixed</option>
+                    </select>
+                </div>
+                <button type="submit" class="primary">Save Changes</button>
             </form>
         </div>
     </div>
@@ -346,12 +507,14 @@
             document.getElementById('auth-container').classList.remove('hidden');
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('admin-register-container').classList.add('hidden');
+            closeAllModals();
         }
 
         function showAppView() {
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('app-container').classList.remove('hidden');
             document.getElementById('admin-register-container').classList.add('hidden');
+            closeAllModals();
             
             if (currentState.currentUser) {
                 const isAdmin = currentState.currentUser.role === 'admin';
@@ -375,6 +538,41 @@
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('admin-register-container').classList.remove('hidden');
+        }
+
+        // Modal Functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function closeAllModals() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.classList.add('hidden');
+            });
+        }
+
+        function openEditModal(job) {
+            if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
+                alert('Only admins can edit jobs');
+                return;
+            }
+
+            // Populate form fields
+            document.getElementById('edit-job-id').value = job.id;
+            document.getElementById('edit-job-name').value = job.name;
+            document.getElementById('edit-job-number').value = job.job_num;
+            document.getElementById('edit-job-quantity').value = job.qty;
+            document.getElementById('edit-job-details').value = job.details_of_job || '';
+            document.getElementById('edit-job-due-date').value = job.due_date ? job.due_date.split('T')[0] : '';
+            document.getElementById('edit-job-department').value = job.department || '';
+            document.getElementById('edit-job-person').value = job.person_in_charge || '';
+            document.getElementById('edit-job-status').value = job.status;
+            
+            openModal('edit-job-modal');
         }
 
         // Auth Functions
@@ -535,11 +733,11 @@
                         <td>${job.job_num}</td>
                         <td>${job.qty}</td>
                         <td>${job.details_of_job || 'N/A'}</td>
-                        <td>${job.due_date || 'N/A'}</td>
+                        <td>${job.due_date ? job.due_date.split('T')[0] : 'N/A'}</td>
                         <td>${job.department}</td>
                         <td>${job.person_in_charge || 'N/A'}</td>
                         <td><span class="status-badge ${statusClass}">${job.status}</span></td>
-                        <td>${job.created_at || 'N/A'}</td>
+                        <td>${job.created_at ? job.created_at.split('T')[0] : 'N/A'}</td>
                         <td>
                             ${isAdmin ? `
                                 <button onclick="openEditModal(${JSON.stringify(job).replace(/"/g, '&quot;')})">Edit</button>
@@ -565,6 +763,79 @@
             document.getElementById('login-form').onsubmit = handleLogin;
             document.getElementById('register-form').onsubmit = handleRegister;
             
+            // Set up job creation
+            document.getElementById('createJobButton').addEventListener('click', () => {
+                openModal('create-job-modal');
+            });
+
+            document.getElementById('create-job-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                try {
+                    const response = await fetch(`${API_BASE}/jobs`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify({
+                            name: document.getElementById('job-name').value,
+                            job_num: document.getElementById('job-number').value,
+                            qty: parseInt(document.getElementById('job-quantity').value),
+                            details_of_job: document.getElementById('job-details').value,
+                            due_date: document.getElementById('job-due-date').value,
+                            department: document.getElementById('job-department').value,
+                            person_in_charge: document.getElementById('job-person').value,
+                            status: document.getElementById('job-status').value,
+                            assigned_user_id: currentState.currentUser.id
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('Failed to create job');
+                    
+                    closeModal('create-job-modal');
+                    document.getElementById('create-job-form').reset();
+                    loadJobs();
+                } catch (error) {
+                    console.error('Error creating job:', error);
+                    alert(`Error: ${error.message}`);
+                }
+            });
+
+            // Set up job editing
+            document.getElementById('edit-job-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                try {
+                    const jobId = document.getElementById('edit-job-id').value;
+                    const response = await fetch(`${API_BASE}/jobs/${jobId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify({
+                            name: document.getElementById('edit-job-name').value,
+                            job_num: document.getElementById('edit-job-number').value,
+                            qty: parseInt(document.getElementById('edit-job-quantity').value),
+                            details_of_job: document.getElementById('edit-job-details').value,
+                            due_date: document.getElementById('edit-job-due-date').value,
+                            department: document.getElementById('edit-job-department').value,
+                            person_in_charge: document.getElementById('edit-job-person').value,
+                            status: document.getElementById('edit-job-status').value
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('Failed to update job');
+                    
+                    closeModal('edit-job-modal');
+                    loadJobs();
+                } catch (error) {
+                    console.error('Error updating job:', error);
+                    alert(`Error: ${error.message}`);
+                }
+            });
+
             // Set up filter controls
             document.getElementById('statusFilter').addEventListener('change', function() {
                 currentState.filters.status = this.value;
@@ -623,6 +894,22 @@
                 loadJobs();
             });
 
+            // Close buttons for modals
+            document.querySelectorAll('.modal .close').forEach(button => {
+                button.addEventListener('click', function() {
+                    closeModal(this.closest('.modal').id);
+                });
+            });
+
+            // Click outside to close modals
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeModal(this.id);
+                    }
+                });
+            });
+
             // Check existing session
             const token = localStorage.getItem('token');
             const user = localStorage.getItem('user');
@@ -666,15 +953,6 @@
             }
             
             loadJobs();
-        };
-
-        window.openEditModal = function(job) {
-            if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
-                alert('Only admins can edit jobs');
-                return;
-            }
-            // Implementation would go here
-            console.log('Edit job:', job);
         };
 
         window.deleteJob = function(jobId) {
