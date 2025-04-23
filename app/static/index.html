@@ -242,9 +242,11 @@
             padding: 20px;
             border-radius: 8px;
             width: 80%;
-            max-width: 600px;
+            max-width: 800px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             position: relative;
+            max-height: 80vh;
+            overflow-y: auto;
         }
 
         .close {
@@ -292,6 +294,11 @@
         #auth-container:not(.hidden) {
             display: block;
         }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -312,8 +319,11 @@
     <div id="app-container" class="hidden">
         <div class="header">
             <h1>Job Tracker</h1>
-            <div class="user-role" id="current-user-role"></div>
-            <button onclick="logout()" class="danger">Logout</button>
+            <div>
+                <span id="current-user-role"></span>
+                <button id="manageUsersButton" class="primary">Manage Users</button>
+                <button onclick="logout()" class="danger">Logout</button>
+            </div>
         </div>
 
         <div class="controls">
@@ -351,24 +361,26 @@
             <button id="resetFilters" class="secondary">Reset Filters</button>
         </div>
 
-        <table id="jobTable">
-            <thead>
-                <tr>
-                    <th onclick="sortJobs('id')">ID <span class="sort-indicator">↕</span></th>
-                    <th onclick="sortJobs('name')">Name <span class="sort-indicator">↕</span></th>
-                    <th onclick="sortJobs('job_num')">Job Num <span class="sort-indicator">↕</span></th>
-                    <th onclick="sortJobs('qty')">Qty <span class="sort-indicator">↕</span></th>
-                    <th onclick="sortJobs('details_of_job')">Details <span class="sort-indicator">↕</span></th>
-                    <th onclick="sortJobs('due_date')">Due Date <span class="sort-indicator">↕</span></th>
-                    <th onclick="sortJobs('department')">Department <span class="sort-indicator">↕</span></th>
-                    <th onclick="sortJobs('person_in_charge')">Person <span class="sort-indicator">↕</span></th>
-                    <th onclick="sortJobs('status')">Status <span class="sort-indicator">↕</span></th>
-                    <th onclick="sortJobs('created_at')">Created At <span class="sort-indicator">↕</span></th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div class="table-wrapper">
+            <table id="jobTable">
+                <thead>
+                    <tr>
+                        <th onclick="sortJobs('id')">ID <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('name')">Name <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('job_num')">Job Num <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('qty')">Qty <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('details_of_job')">Details <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('due_date')">Due Date <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('department')">Department <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('person_in_charge')">Person <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('status')">Status <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('created_at')">Created At <span class="sort-indicator">↕</span></th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 
     <!-- Admin Register View -->
@@ -491,6 +503,56 @@
         </div>
     </div>
 
+    <!-- User Management Modal -->
+    <div id="user-management-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('user-management-modal')">&times;</span>
+            <h2>User Management</h2>
+            <div class="table-wrapper">
+                <table id="userTable">
+                    <thead>
+                        <tr>
+                            <th onclick="sortUsers('id')">ID</th>
+                            <th onclick="sortUsers('username')">Username</th>
+                            <th onclick="sortUsers('role')">Role</th>
+                            <th onclick="sortUsers('created_at')">Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="edit-user-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('edit-user-modal')">&times;</span>
+            <h2>Edit User</h2>
+            <form id="edit-user-form">
+                <input type="hidden" id="edit-user-id">
+                <div class="form-group">
+                    <label for="edit-username">Username:</label>
+                    <input type="text" id="edit-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-user-role">Role:</label>
+                    <select id="edit-user-role" required>
+                        <option value="user">User</option>
+                        <option value="manager">Manager</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-user-password">New Password (leave blank to keep current):</label>
+                    <input type="password" id="edit-user-password">
+                </div>
+                <button type="submit" class="primary">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         // API Configuration
         const API_BASE = '/api';
@@ -500,6 +562,8 @@
         const currentState = {
             sortColumn: null,
             sortDirection: 'asc',
+            usersSortColumn: null,
+            usersSortDirection: 'asc',
             isLoading: false,
             currentUser: null,
             filters: {
@@ -531,15 +595,7 @@
                     `Logged in as ${currentState.currentUser.username} (${currentState.currentUser.role})`;
                 
                 document.getElementById('createJobButton').style.display = isAdmin ? 'inline-block' : 'none';
-                
-                if (isAdmin && !document.getElementById('register-user-btn')) {
-                    const btn = document.createElement('button');
-                    btn.id = 'register-user-btn';
-                    btn.className = 'primary';
-                    btn.textContent = 'Register User';
-                    btn.onclick = showRegisterView;
-                    document.querySelector('.header').appendChild(btn);
-                }
+                document.getElementById('manageUsersButton').style.display = isAdmin ? 'inline-block' : 'none';
             }
         }
 
@@ -739,10 +795,81 @@
             tbody.innerHTML = tableHTML;
         }
 
+        // User Management
+        async function loadUsers() {
+            try {
+                setLoading(true);
+                const queryParams = [];
+                
+                if (currentState.usersSortColumn) {
+                    queryParams.push(`sort=${encodeURIComponent(currentState.usersSortColumn)}`);
+                    queryParams.push(`order=${encodeURIComponent(currentState.usersSortDirection)}`);
+                }
+                
+                const queryString = queryParams.length ? `?${queryParams.join('&')}` : '';
+                const response = await fetch(`${API_BASE}/users${queryString}`, {
+                    headers: { 
+                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                const users = await response.json();
+                renderUsers(users);
+            } catch (error) {
+                console.error('Failed to load users:', error);
+                showUsersError('Failed to load users. Please try again.');
+                if (error.message.includes('401')) {
+                    logout();
+                }
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function renderUsers(users) {
+            const tbody = document.getElementById('userTable').querySelector('tbody');
+            if (!tbody) return;
+            
+            if (!users || users.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">No users found</td></tr>`;
+                return;
+            }
+
+            let tableHTML = '';
+            const currentUserId = currentState.currentUser?.id;
+            
+            users.forEach(user => {
+                tableHTML += `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.username}</td>
+                        <td>${user.role}</td>
+                        <td>${user.created_at || 'N/A'}</td>
+                        <td>
+                            ${currentUserId !== user.id ? `
+                                <button onclick="openEditUserModal(${JSON.stringify(user).replace(/"/g, '&quot;')})">Edit</button>
+                                <button class="danger" onclick="deleteUser(${user.id})">Delete</button>
+                            ` : '<span>Current User</span>'}
+                        </td>
+                    </tr>`;
+            });
+            
+            tbody.innerHTML = tableHTML;
+        }
+
         function showError(message) {
             const tbody = document.getElementById('jobTable').querySelector('tbody');
             if (tbody) {
                 tbody.innerHTML = `<tr><td colspan="11" style="color: red; text-align: center;">${message}</td></tr>`;
+            }
+        }
+
+        function showUsersError(message) {
+            const tbody = document.getElementById('userTable').querySelector('tbody');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="5" style="color: red; text-align: center;">${message}</td></tr>`;
             }
         }
 
@@ -854,6 +981,55 @@
             }
         }
 
+        async function handleEditUser(event) {
+            event.preventDefault();
+            
+            if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
+                alert('Only admins can edit users');
+                return;
+            }
+
+            const userId = document.getElementById('edit-user-id').value;
+            if (!userId) return;
+
+            try {
+                setLoading(true);
+                const formData = {
+                    username: document.getElementById('edit-username').value,
+                    role: document.getElementById('edit-user-role').value
+                };
+
+                // Only include password if it has a value
+                const password = document.getElementById('edit-user-password').value;
+                if (password) {
+                    formData.password = password;
+                }
+
+                const response = await fetch(`${API_BASE}/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to update user');
+                }
+
+                closeModal('edit-user-modal');
+                loadUsers();
+                alert('User updated successfully!');
+            } catch (error) {
+                console.error('Error updating user:', error);
+                alert(`Error: ${error.message}`);
+            } finally {
+                setLoading(false);
+            }
+        }
+
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             // Set up form handlers
@@ -861,10 +1037,17 @@
             document.getElementById('register-form').onsubmit = handleRegister;
             document.getElementById('create-job-form').addEventListener('submit', handleCreateJob);
             document.getElementById('edit-job-form').addEventListener('submit', handleEditJob);
+            document.getElementById('edit-user-form').addEventListener('submit', handleEditUser);
             
             // Set up job creation button
             document.getElementById('createJobButton').addEventListener('click', () => {
                 openModal('create-job-modal');
+            });
+
+            // Set up user management button
+            document.getElementById('manageUsersButton').addEventListener('click', () => {
+                openModal('user-management-modal');
+                loadUsers();
             });
 
             // Set up filter controls
@@ -969,11 +1152,11 @@
                 currentState.sortDirection = 'asc';
             }
             
-            document.querySelectorAll('.sort-indicator').forEach(indicator => {
+            document.querySelectorAll('#jobTable .sort-indicator').forEach(indicator => {
                 indicator.textContent = '↕';
             });
             
-            const header = document.querySelector(`th[onclick*="${column}"]`);
+            const header = document.querySelector(`#jobTable th[onclick*="${column}"]`);
             if (header) {
                 const indicator = header.querySelector('.sort-indicator');
                 if (indicator) {
@@ -982,6 +1165,31 @@
             }
             
             loadJobs();
+        };
+
+        window.sortUsers = function(column) {
+            if (currentState.isLoading) return;
+            
+            if (currentState.usersSortColumn === column) {
+                currentState.usersSortDirection = currentState.usersSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentState.usersSortColumn = column;
+                currentState.usersSortDirection = 'asc';
+            }
+            
+            document.querySelectorAll('#userTable .sort-indicator').forEach(indicator => {
+                indicator.textContent = '↕';
+            });
+            
+            const header = document.querySelector(`#userTable th[onclick*="${column}"]`);
+            if (header) {
+                const indicator = header.querySelector('.sort-indicator');
+                if (indicator) {
+                    indicator.textContent = currentState.usersSortDirection === 'asc' ? '↑' : '↓';
+                }
+            }
+            
+            loadUsers();
         };
 
         window.deleteJob = function(jobId) {
@@ -1009,6 +1217,36 @@
             });
         };
 
+        window.deleteUser = function(userId) {
+            if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
+                alert('Only admins can delete users');
+                return;
+            }
+            
+            if (userId === currentState.currentUser.id) {
+                alert('You cannot delete your own account');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to delete this user?')) return;
+            
+            fetch(`${API_BASE}/users/${userId}`, {
+                method: 'DELETE',
+                headers: { 
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to delete user');
+                loadUsers();
+                alert('User deleted successfully!');
+            })
+            .catch(error => {
+                console.error('Error deleting user:', error);
+                alert(`Error: ${error.message}`);
+            });
+        };
+
         window.openEditModal = function(job) {
             if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
                 alert('Only admins can edit jobs');
@@ -1026,6 +1264,20 @@
             document.getElementById('edit-job-status').value = job.status;
             
             openModal('edit-job-modal');
+        };
+
+        window.openEditUserModal = function(user) {
+            if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
+                alert('Only admins can edit users');
+                return;
+            }
+
+            document.getElementById('edit-user-id').value = user.id;
+            document.getElementById('edit-username').value = user.username;
+            document.getElementById('edit-user-role').value = user.role;
+            document.getElementById('edit-user-password').value = '';
+            
+            openModal('edit-user-modal');
         };
     </script>
 </body>

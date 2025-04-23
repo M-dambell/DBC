@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Chatbot</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background-color: #3498db;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 20px;
+        }
+        
+        .chat-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: 70vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+        
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .bot-message {
+            background-color: #f1f1f1;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .sql-message {
+            background-color: #e8f5e9;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+        
+        .input-area {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        #user-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            font-size: 16px;
+        }
+        
+        #send-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        #send-button:hover {
+            background-color: #2980b9;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #3498db;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .chat-container {
+                height: 80vh;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+            
+            .input-area {
+                flex-direction: column;
+            }
+            
+            #send-button {
+                margin-left: 0;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Database Chatbot</h1>
+            <p>Ask questions about the job tracker database</p>
+        </header>
+        
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot-message">
+                    Hello! I'm your database assistant. You can ask me questions like:
+                    <ul>
+                        <li>"How many jobs are in progress?"</li>
+                        <li>"Show me all jobs due this week"</li>
+                        <li>"Who is working on job number JT-1001?"</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <input type="text" id="user-input" placeholder="Ask a question about the database...">
+                <button id="send-button">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatMessages = document.getElementById('chat-messages');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            
+            // Add message to chat
+            function addMessage(text, isUser = false, isSQL = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'} ${isSQL ? 'sql-message' : ''}`;
+                messageDiv.textContent = text;
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // Handle sending messages
+            async function sendMessage() {
+                const question = userInput.value.trim();
+                if (!question) return;
+                
+                // Add user message to chat
+                addMessage(question, true);
+                userInput.value = '';
+                
+                // Show loading indicator
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'message bot-message';
+                loadingDiv.innerHTML = '<div class="loading"></div>';
+                chatMessages.appendChild(loadingDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                try {
+                    // Send question to backend
+                    const response = await fetch('/api/chatbot', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+                        },
+                        body: JSON.stringify({ question })
+                    });
+                    
+                    // Remove loading indicator
+                    chatMessages.removeChild(loadingDiv);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to get response from chatbot');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Add bot response to chat
+                    if (data.sql) {
+                        addMessage("Here's what I found:", false);
+                        addMessage(data.sql, false, true);
+                    }
+                    
+                    if (data.results && data.results.length > 0) {
+                        // Format the results as a table
+                        let tableHTML = '<table style="width:100%;border-collapse:collapse;margin-top:10px;">';
+                        
+                        // Table headers
+                        tableHTML += '<tr>';
+                        for (const key in data.results[0]) {
+                            tableHTML += `<th style="border:1px solid #ddd;padding:8px;text-align:left;background-color:#f2f2f2;">${key}</th>`;
+                        }
+                        tableHTML += '</tr>';
+                        
+                        // Table rows
+                        data.results.forEach(row => {
+                            tableHTML += '<tr>';
+                            for (const key in row) {
+                                tableHTML += `<td style="border:1px solid #ddd;padding:8px;">${row[key] || 'N/A'}</td>`;
+                            }
+                            tableHTML += '</tr>';
+                        });
+                        
+                        tableHTML += '</table>';
+                        
+                        const resultsDiv = document.createElement('div');
+                        resultsDiv.className = 'message bot-message';
+                        resultsDiv.innerHTML = tableHTML;
+                        chatMessages.appendChild(resultsDiv);
+                    } else {
+                        addMessage("I couldn't find any results for that query.", false);
+                    }
+                    
+                } catch (error) {
+                    // Remove loading indicator
+                    chatMessages.removeChild(loadingDiv);
+                    
+                    console.error('Error:', error);
+                    addMessage("Sorry, I encountered an error processing your request.", false);
+                }
+            }
+            
+            // Event listeners
+            sendButton.addEventListener('click', sendMessage);
+            userInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

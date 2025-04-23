@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -7,6 +8,9 @@ import os
 from datetime import datetime, timedelta
 import jwt
 from flask_cors import CORS
+import openai
+from datetime import datetime, timedelta
+
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='static')
@@ -406,7 +410,191 @@ def initialize_database():
             """)
             conn.commit()
 
+
+# Add these new routes right after your existing routes (before the frontend serving section)
+
+# --- User Management Routes ---
+@app.route('/api/users', methods=['GET'])
+@token_required
+@role_required(['admin'])
+def get_users(current_user):
+    """Get all users (admin only)"""
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("""
+                    SELECT id, username, role, created_at 
+                    FROM users 
+                    ORDER BY created_at DESC
+                """)
+                users = cursor.fetchall()
+                
+                # Convert datetime to ISO format
+                for user in users:
+                    if user.get('created_at'):
+                        user['created_at'] = user['created_at'].isoformat()
+                
+                return jsonify(users)
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch users: {str(e)}"}), 500
+
+@app.route('/api/users/<int:user_id>', methods=['PUT'])
+@token_required
+@role_required(['admin'])
+def update_user(current_user, user_id):
+    """Update user details (admin only)"""
+    if current_user['id'] == user_id:
+        return jsonify({"error": "Cannot modify your own account"}), 400
+    
+    data = request.get_json()
+    
+    # Validate input
+    if 'role' in data and data['role'] not in ['admin', 'manager', 'user']:
+        return jsonify({"error": "Invalid role specified"}), 400
+    
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # Check if user exists
+                cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+                if not cursor.fetchone():
+                    return jsonify({"error": "User not found"}), 404
+                
+                # Build update query
+                update_fields = []
+                params = []
+                
+                if 'username' in data:
+                    update_fields.append("username = %s")
+                    params.append(data['username'])
+                
+                if 'role' in data:
+                    update_fields.append("role = %s")
+                    params.append(data['role'])
+                
+                if 'password' in data and data['password']:
+                    update_fields.append("password_hash = %s")
+                    params.append(generate_password_hash(data['password']))
+                
+                if not update_fields:
+                    return jsonify({"error": "No fields to update"}), 400
+                
+                params.append(user_id)
+                query = f"""
+                    UPDATE users 
+                    SET {', '.join(update_fields)}
+                    WHERE id = %s
+                    RETURNING id, username, role, created_at
+                """
+                
+                cursor.execute(query, params)
+                updated_user = cursor.fetchone()
+                conn.commit()
+                
+                if updated_user.get('created_at'):
+                    updated_user['created_at'] = updated_user['created_at'].isoformat()
+                
+                return jsonify(updated_user)
+    except psycopg2.IntegrityError:
+        return jsonify({"error": "Username already exists"}), 409
+    except Exception as e:
+        return jsonify({"error": f"Failed to update user: {str(e)}"}), 500
+
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
+@token_required
+@role_required(['admin'])
+def delete_user(current_user, user_id):
+    """Delete a user (admin only)"""
+    if current_user['id'] == user_id:
+        return jsonify({"error": "Cannot delete your own account"}), 400
+    
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cursor:
+                # Check if user exists
+                cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+                if not cursor.fetchone():
+                    return jsonify({"error": "User not found"}), 404
+                
+                # Check if user has assigned jobs
+                cursor.execute("""
+                    SELECT COUNT(*) as job_count 
+                    FROM jobs 
+                    WHERE assigned_user_id = %s
+                """, (user_id,))
+                job_count = cursor.fetchone()['job_count']
+                
+                if job_count > 0:
+                    return jsonify({
+                        "error": "Cannot delete user with assigned jobs",
+                        "job_count": job_count
+                    }), 400
+                
+                # Delete the user
+                cursor.execute("DELETE FROM users WHERE id = %s RETURNING id", (user_id,))
+                if not cursor.fetchone():
+                    return jsonify({"error": "User not found"}), 404
+                
+                conn.commit()
+                return jsonify({"success": True, "message": "User deleted successfully"})
+    except Exception as e:
+        return jsonify({"error": f"Failed to delete user: {str(e)}"}), 500
+
+
+# Add this configuration (replace with your OpenAI API key)
+OPENAI_API_KEY = "your-openai-api-key"
+openai.api_key = OPENAI_API_KEY
+
+# Add this route to your Flask app
+@app.route('/api/chatbot', methods=['POST'])
+@token_required
+def chatbot(current_user):
+    data = request.get_json()
+    question = data.get('question')
+    
+    if not question:
+        return jsonify({"error": "Question is required"}), 400
+    
+    try:
+        # Step 1: Convert natural language to SQL using OpenAI
+        prompt = f"""
+        You are a senior database administrator. Convert this natural language question into a PostgreSQL SQL query.
+        Database schema:
+        - jobs (id, name, job_num, qty, details_of_job, due_date, department, person_in_charge, status, created_at, assigned_user_id)
+        - users (id, username, password_hash, role, created_at)
+        
+        Question: "{question}"
+        
+        Return ONLY the SQL query, nothing else.
+        """
+        
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=prompt,
+            max_tokens=150,
+            temperature=0.3
+        )
+        
+        sql_query = response.choices[0].text.strip()
+        
+        # Step 2: Execute the SQL query
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(sql_query)
+                results = cursor.fetchall()
+                
+        return jsonify({
+            "question": question,
+            "sql": sql_query,
+            "results": results
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "error": str(e),
+            "message": "Failed to process your question"
+        }), 500
+
 if __name__ == '__main__':
     initialize_database()
     app.run(host='0.0.0.0', port=5000, debug=False)
-    
