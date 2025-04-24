@@ -138,13 +138,43 @@
                 margin-top: 10px;
             }
         }
+
+        /* Add to existing chatbot styles */
+        .chatbot-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .chatbot-logo {
+            height: 50px;
+            width: auto;
+            max-width: 150px;
+            object-fit: contain;
+        }
+
+        /* Adjust header padding if needed */
+        header {
+            background-color: #3498db;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Database Chatbot</h1>
-            <p>Ask questions about the job tracker database</p>
+            <div class="chatbot-header">
+                <img src="/static/company-logo.png" alt="Company Logo" class="chatbot-logo">
+                <div>
+                    <h1>Database Chatbot</h1>
+                    <p>Ask questions about the job tracker database</p>
+                </div>
+            </div>
         </header>
         
         <div class="chat-container">

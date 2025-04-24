@@ -499,12 +499,12 @@ def update_user(current_user, user_id):
         return jsonify({"error": "Username already exists"}), 409
     except Exception as e:
         return jsonify({"error": f"Failed to update user: {str(e)}"}), 500
+    
 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 @token_required
 @role_required(['admin'])
 def delete_user(current_user, user_id):
-    """Delete a user (admin only)"""
     if current_user['id'] == user_id:
         return jsonify({"error": "Cannot delete your own account"}), 400
     
@@ -516,13 +516,9 @@ def delete_user(current_user, user_id):
                 if not cursor.fetchone():
                     return jsonify({"error": "User not found"}), 404
                 
-                # Check if user has assigned jobs
-                cursor.execute("""
-                    SELECT COUNT(*) as job_count 
-                    FROM jobs 
-                    WHERE assigned_user_id = %s
-                """, (user_id,))
-                job_count = cursor.fetchone()['job_count']
+                # Check for assigned jobs - using numeric index instead of name
+                cursor.execute("SELECT COUNT(*) FROM jobs WHERE assigned_user_id = %s", (user_id,))
+                job_count = cursor.fetchone()[0]  # Changed from ['job_count'] to [0]
                 
                 if job_count > 0:
                     return jsonify({
@@ -536,10 +532,17 @@ def delete_user(current_user, user_id):
                     return jsonify({"error": "User not found"}), 404
                 
                 conn.commit()
-                return jsonify({"success": True, "message": "User deleted successfully"})
+                return jsonify({
+                    "success": True, 
+                    "message": "User deleted successfully"
+                })
     except Exception as e:
-        return jsonify({"error": f"Failed to delete user: {str(e)}"}), 500
-
+        if 'conn' in locals():
+            conn.rollback()
+        return jsonify({
+            "error": f"Failed to delete user: {str(e)}",
+            "message": "Please try again or contact support"
+        }), 500
 
 # Add this configuration (replace with your OpenAI API key)
 OPENAI_API_KEY = "your-openai-api-key"
