@@ -109,12 +109,54 @@
             border-radius: 50%;
             border-top-color: #3498db;
             animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
         }
         
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
         
+        .chatbot-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .chatbot-logo {
+            height: 50px;
+            width: auto;
+            max-width: 150px;
+            object-fit: contain;
+        }
+
+        .results-table {
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+
+        .results-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+
+        .results-table th, 
+        .results-table td {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .results-table th {
+            background-color: #f2f2f2;
+            font-weight: 600;
+        }
+
+        .results-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
         /* Mobile responsiveness */
         @media (max-width: 768px) {
             .container {
@@ -136,32 +178,8 @@
             #send-button {
                 margin-left: 0;
                 margin-top: 10px;
+                width: 100%;
             }
-        }
-
-        /* Add to existing chatbot styles */
-        .chatbot-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        .chatbot-logo {
-            height: 50px;
-            width: auto;
-            max-width: 150px;
-            object-fit: contain;
-        }
-
-        /* Adjust header padding if needed */
-        header {
-            background-color: #3498db;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            border-radius: 8px 8px 0 0;
-            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -190,7 +208,7 @@
             </div>
             
             <div class="input-area">
-                <input type="text" id="user-input" placeholder="Ask a question about the database...">
+                <input type="text" id="user-input" placeholder="Ask a question about the database..." autocomplete="off">
                 <button id="send-button">Send</button>
             </div>
         </div>
@@ -203,92 +221,132 @@
             const sendButton = document.getElementById('send-button');
             
             // Add message to chat
-            function addMessage(text, isUser = false, isSQL = false) {
+            function addMessage(text, isUser, isSQL = false) {
                 const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'} ${isSQL ? 'sql-message' : ''}`;
-                messageDiv.textContent = text;
+                messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+                
+                if (isSQL) {
+                    const sqlDiv = document.createElement('div');
+                    sqlDiv.className = 'sql-message';
+                    sqlDiv.textContent = text;
+                    messageDiv.appendChild(sqlDiv);
+                } else {
+                    messageDiv.textContent = text;
+                }
+                
                 chatMessages.appendChild(messageDiv);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }
             
-            // Handle sending messages
+            // Check if user is authenticated
+            function checkAuth() {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    addMessage("Please login to use the chatbot", false);
+                    return false;
+                }
+                return true;
+            }
+            
+            // Handle bot response
+            function handleBotResponse(data) {
+                // Clear loading indicator
+                const loadingMessage = document.querySelector('.message.bot-message.loading');
+                if (loadingMessage) {
+                    loadingMessage.remove();
+                }
+                
+                if (data.error) {
+                    addMessage(`Error: ${data.error}`, false);
+                    return;
+                }
+                
+                if (data.sql) {
+                    addMessage("Here's the query I generated:", false);
+                    addMessage(data.sql, false, true);
+                }
+                
+                if (data.results && data.results.length > 0) {
+                    // Create table
+                    let tableHTML = '<div class="results-table"><table><thead><tr>';
+                    
+                    // Headers
+                    Object.keys(data.results[0]).forEach(key => {
+                        tableHTML += `<th>${key}</th>`;
+                    });
+                    tableHTML += '</tr></thead><tbody>';
+                    
+                    // Rows
+                    data.results.forEach(row => {
+                        tableHTML += '<tr>';
+                        Object.values(row).forEach(value => {
+                            const displayValue = (value === null || value === undefined) ? 'N/A' : value;
+                            tableHTML += `<td>${displayValue}</td>`;
+                        });
+                        tableHTML += '</tr>';
+                    });
+                    
+                    tableHTML += '</tbody></table></div>';
+                    
+                    const resultsDiv = document.createElement('div');
+                    resultsDiv.className = 'message bot-message';
+                    resultsDiv.innerHTML = tableHTML;
+                    chatMessages.appendChild(resultsDiv);
+                } else if (data.results && data.results.length === 0) {
+                    addMessage("No results found for this query.", false);
+                }
+                
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            // Send message to server
             async function sendMessage() {
                 const question = userInput.value.trim();
                 if (!question) return;
                 
-                // Add user message to chat
+                if (!checkAuth()) {
+                    userInput.value = '';
+                    return;
+                }
+                
                 addMessage(question, true);
                 userInput.value = '';
                 
-                // Show loading indicator
+                // Add loading indicator
                 const loadingDiv = document.createElement('div');
-                loadingDiv.className = 'message bot-message';
-                loadingDiv.innerHTML = '<div class="loading"></div>';
+                loadingDiv.className = 'message bot-message loading';
+                loadingDiv.innerHTML = '<div class="loading"></div> Processing your question...';
                 chatMessages.appendChild(loadingDiv);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 
                 try {
-                    // Send question to backend
                     const response = await fetch('/api/chatbot', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
                         },
                         body: JSON.stringify({ question })
                     });
                     
-                    // Remove loading indicator
-                    chatMessages.removeChild(loadingDiv);
-                    
                     if (!response.ok) {
-                        throw new Error('Failed to get response from chatbot');
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Request failed with status ' + response.status);
                     }
                     
                     const data = await response.json();
-                    
-                    // Add bot response to chat
-                    if (data.sql) {
-                        addMessage("Here's what I found:", false);
-                        addMessage(data.sql, false, true);
-                    }
-                    
-                    if (data.results && data.results.length > 0) {
-                        // Format the results as a table
-                        let tableHTML = '<table style="width:100%;border-collapse:collapse;margin-top:10px;">';
-                        
-                        // Table headers
-                        tableHTML += '<tr>';
-                        for (const key in data.results[0]) {
-                            tableHTML += `<th style="border:1px solid #ddd;padding:8px;text-align:left;background-color:#f2f2f2;">${key}</th>`;
-                        }
-                        tableHTML += '</tr>';
-                        
-                        // Table rows
-                        data.results.forEach(row => {
-                            tableHTML += '<tr>';
-                            for (const key in row) {
-                                tableHTML += `<td style="border:1px solid #ddd;padding:8px;">${row[key] || 'N/A'}</td>`;
-                            }
-                            tableHTML += '</tr>';
-                        });
-                        
-                        tableHTML += '</table>';
-                        
-                        const resultsDiv = document.createElement('div');
-                        resultsDiv.className = 'message bot-message';
-                        resultsDiv.innerHTML = tableHTML;
-                        chatMessages.appendChild(resultsDiv);
-                    } else {
-                        addMessage("I couldn't find any results for that query.", false);
-                    }
+                    handleBotResponse(data);
                     
                 } catch (error) {
-                    // Remove loading indicator
-                    chatMessages.removeChild(loadingDiv);
-                    
                     console.error('Error:', error);
-                    addMessage("Sorry, I encountered an error processing your request.", false);
+                    
+                    // Remove loading indicator
+                    const loadingMessage = document.querySelector('.message.bot-message.loading');
+                    if (loadingMessage) {
+                        loadingMessage.remove();
+                    }
+                    
+                    addMessage(`Sorry, I encountered an error: ${error.message}`, false);
                 }
             }
             
@@ -299,6 +357,9 @@
                     sendMessage();
                 }
             });
+            
+            // Focus input field on load
+            userInput.focus();
         });
     </script>
 </body>

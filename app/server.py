@@ -15,7 +15,14 @@ from datetime import datetime, timedelta
 # Initialize Flask app
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(24).hex()
-CORS(app)  # Enable CORS for all routes
+# Enable CORS for all routes
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:*", "https://your-production-domain.com"],
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "allow_headers": ["Authorization", "Content-Type"]
+    }
+})  
 
 # Database configuration
 DB_CONFIG = {
@@ -545,59 +552,71 @@ def delete_user(current_user, user_id):
         }), 500
 
 # Add this configuration (replace with your OpenAI API key)
-OPENAI_API_KEY = "your-openai-api-key"
+OPENAI_API_KEY = "sk-your-real-api-key-here"  # Replace with actual key
 openai.api_key = OPENAI_API_KEY
 
-# Add this route to your Flask app
 @app.route('/api/chatbot', methods=['POST'])
 @token_required
 def chatbot(current_user):
-    data = request.get_json()
-    question = data.get('question')
-    
-    if not question:
-        return jsonify({"error": "Question is required"}), 400
-    
     try:
-        # Step 1: Convert natural language to SQL using OpenAI
-        prompt = f"""
-        You are a senior database administrator. Convert this natural language question into a PostgreSQL SQL query.
-        Database schema:
-        - jobs (id, name, job_num, qty, details_of_job, due_date, department, person_in_charge, status, created_at, assigned_user_id)
-        - users (id, username, password_hash, role, created_at)
+        data = request.get_json()
+        if not data or 'question' not in data:
+            return jsonify({"error": "Missing question parameter"}), 400
+            
+        question = data['question'].strip()
+        if not question:
+            return jsonify({"error": "Question cannot be empty"}), 400
         
-        Question: "{question}"
-        
-        Return ONLY the SQL query, nothing else.
-        """
+        # Debug logging
+        app.logger.info(f"Processing question: {question}")
         
         response = openai.Completion.create(
             engine="text-davinci-003",
-            prompt=prompt,
-            max_tokens=150,
+            prompt=f"""Convert the following natural language question into a PostgreSQL SQL query:
+
+        Question: {question}
+
+        Database Schema:
+        - jobs (id, name, job_num, qty, details_of_job, due_date, department, person_in_charge, status, created_at, assigned_user_id)
+        - users (id, username, password_hash, role, created_at)
+
+        Rules:
+        1. Always use table aliases (j for jobs, u for users)
+        2. Always use explicit JOIN syntax
+        3. Only generate SELECT queries
+        4. Return only the SQL query, no explanations
+
+        SQL Query:""",
+            max_tokens=250,
             temperature=0.3
         )
         
-        sql_query = response.choices[0].text.strip()
+        sql = response.choices[0].text.strip()
+        app.logger.info(f"Generated SQL: {sql}")
         
-        # Step 2: Execute the SQL query
+        # Simple SQL validation
+        if not sql.lower().startswith('select'):
+            return jsonify({"error": "Generated query was not a SELECT statement"}), 400
+            
         with get_db_connection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(sql_query)
+                cursor.execute(sql)
                 results = cursor.fetchall()
+                app.logger.info(f"Found {len(results)} results")
                 
-        return jsonify({
-            "question": question,
-            "sql": sql_query,
-            "results": results
-        })
-        
+                return jsonify({
+                    "question": question,
+                    "sql": sql,
+                    "results": results
+                })
+                
     except Exception as e:
+        app.logger.error(f"Chatbot error: {str(e)}")
         return jsonify({
-            "error": str(e),
-            "message": "Failed to process your question"
+            "error": "Processing failed",
+            "details": str(e)
         }), 500
-
+    
 if __name__ == '__main__':
     initialize_database()
     app.run(host='0.0.0.0', port=5000, debug=False)

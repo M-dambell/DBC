@@ -356,6 +356,30 @@
 
         /* Add Font Awesome for icons */
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
+
+        /* Chatbot button specific styling */
+        #chatbotButton {
+            background-color: #9b59b6; /* Purple color to distinguish it */
+            margin-left: 10px;
+        }
+
+        #chatbotButton:hover {
+            background-color: #8e44ad;
+        }
+
+        /* Chatbot modal styling */
+        #chatbot-modal {
+            max-width: 800px;
+            width: 90%;
+        }
+
+        #chatbot-iframe {
+            width: 100%;
+            height: 70vh;
+            border: none;
+            border-radius: 8px;
+        }
+
     </style>
 </head>
 <body>
@@ -382,6 +406,7 @@
             <div>
                 <span id="current-user-role"></span>
                 <button id="manageUsersButton" class="primary">Manage Users</button>
+                <button id="chatbotButton" class="primary">Ask Database</button> <!-- New button -->
                 <button onclick="logout()" class="danger">Logout</button>
             </div>
         </div>
@@ -626,6 +651,15 @@
                 </div>
                 <button type="submit" class="primary">Save Changes</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Chatbot Modal -->
+    <div id="chatbot-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('chatbot-modal')">&times;</span>
+            <h2>Database Assistant</h2>
+            <iframe id="chatbot-iframe" src="/chatbot.html"></iframe>
         </div>
     </div>
 
@@ -1170,6 +1204,23 @@
             doc.save(`jobs_${new Date().toISOString().slice(0,10)}.pdf`);
         }
 
+        function addMessage(text, isUser, isSQL = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            
+            if (isSQL) {
+                const sqlDiv = document.createElement('div');
+                sqlDiv.className = 'sql-message';
+                sqlDiv.textContent = text;
+                messageDiv.appendChild(sqlDiv);
+            } else {
+                messageDiv.textContent = text;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             // Set up form handlers
@@ -1284,6 +1335,14 @@
             } else {
                 showAuthView();
             }
+
+            // Add to your DOMContentLoaded event listener:
+            document.getElementById('chatbotButton').addEventListener('click', () => {
+                openModal('chatbot-modal');
+                
+                // Reset the iframe to ensure fresh state
+                document.getElementById('chatbot-iframe').src = '/chatbot.html';
+            });
         });
 
         // Global functions
@@ -1441,6 +1500,11 @@
             document.getElementById('edit-user-password').value = '';
             
             openModal('edit-user-modal');
+        };
+
+        // Add this to your global functions:
+        window.openChatbot = function() {
+            openModal('chatbot-modal');
         };
     </script>
 </body>
