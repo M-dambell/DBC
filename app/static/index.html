@@ -466,16 +466,16 @@
             <table id="jobTable">
                 <thead>
                     <tr>
-                        <th onclick="sortJobs('id')">ID <span class="sort-indicator">↕</span></th>
-                        <th onclick="sortJobs('name')">Name <span class="sort-indicator">↕</span></th>
-                        <th onclick="sortJobs('job_num')">Job Num <span class="sort-indicator">↕</span></th>
-                        <th onclick="sortJobs('qty')">Qty <span class="sort-indicator">↕</span></th>
-                        <th onclick="sortJobs('details_of_job')">Details <span class="sort-indicator">↕</span></th>
-                        <th onclick="sortJobs('due_date')">Due Date <span class="sort-indicator">↕</span></th>
-                        <th onclick="sortJobs('department')">Department <span class="sort-indicator">↕</span></th>
-                        <th onclick="sortJobs('person_in_charge')">Person <span class="sort-indicator">↕</span></th>
-                        <th onclick="sortJobs('status')">Status <span class="sort-indicator">↕</span></th>
-                        <th onclick="sortJobs('created_at')">Created At <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('id')">ID</th>
+                        <th onclick="sortJobs('name')">Name</th>
+                        <th onclick="sortJobs('job_num')">Job Num</th>
+                        <th onclick="sortJobs('qty')">Qty</th>
+                        <th onclick="sortJobs('details_of_job')">Details</th>
+                        <th onclick="sortJobs('due_date')">Due Date</th>
+                        <th onclick="sortJobs('department')">Department</th>
+                        <th onclick="sortJobs('person_in_charge')">Person</th>
+                        <th onclick="sortJobs('status')">Status</th>
+                        <th onclick="sortJobs('created_at')">Created At</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -871,40 +871,24 @@
 
         function renderJobs(jobs) {
             const tbody = document.getElementById('jobTable').querySelector('tbody');
-            if (!tbody) return;
-            
-            if (!jobs || jobs.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="11" style="text-align: center;">No jobs found</td></tr>`;
-                return;
-            }
-
-            let tableHTML = '';
-            const isAdmin = currentState.currentUser && currentState.currentUser.role === 'admin';
-            
-            jobs.forEach(job => {
-                const statusClass = `status-${job.status.replace(/\s+/g, '-').toLowerCase()}`;
-                tableHTML += `
-                    <tr>
-                        <td>${job.id}</td>
-                        <td>${job.name}</td>
-                        <td>${job.job_num}</td>
-                        <td>${job.qty}</td>
-                        <td>${job.details_of_job || 'N/A'}</td>
-                        <td>${job.due_date || 'N/A'}</td>
-                        <td>${job.department}</td>
-                        <td>${job.person_in_charge || 'N/A'}</td>
-                        <td><span class="status-badge ${statusClass}">${job.status}</span></td>
-                        <td>${job.created_at || 'N/A'}</td>
-                        <td>
-                            ${isAdmin ? `
-                                <button onclick="openEditModal(${JSON.stringify(job).replace(/"/g, '&quot;')})">Edit</button>
-                                <button class="danger" onclick="deleteJob(${job.id})">Delete</button>
-                            ` : '<span>View Only</span>'}
-                        </td>
-                    </tr>`;
-            });
-            
-            tbody.innerHTML = tableHTML;
+            tbody.innerHTML = jobs.map(job => `
+                <tr>
+                    <td>${job.id}</td>
+                    <td>${job.name}</td>
+                    <td>${job.job_num}</td>
+                    <td>${job.qty}</td>
+                    <td>${job.details_of_job || 'N/A'}</td>
+                    <td>${job.due_date || 'N/A'}</td>
+                    <td>${job.department}</td>
+                    <td>${job.person_in_charge || 'N/A'}</td>
+                    <td><span class="status-badge status-${job.status.replace(/\s+/g, '-')}">${job.status}</span></td>
+                    <td>${job.created_at}</td>
+                    <td>
+                        <button onclick="openEditModal(${job.id})">Edit</button>
+                        <button class="danger" onclick="deleteJob(${job.id})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
         // User Management
@@ -1004,7 +988,6 @@
                     department: document.getElementById('job-department').value,
                     person_in_charge: document.getElementById('job-person').value,
                     status: document.getElementById('job-status').value,
-                    assigned_user_id: currentState.currentUser.id
                 };
 
                 // Only include due_date if it has a value

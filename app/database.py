@@ -1,53 +1,81 @@
-# database.py
 import psycopg2
-from psycopg2 import sql
+from psycopg2.pool import SimpleConnectionPool
+import os
 
-# Replace these with your Render PostgreSQL credentials
-DB_NAME = "dbc_jtdb"
-DB_USER = "dbc_jtdb_user"
-DB_PASSWORD = "eBH1D0XF5oAMNt1cuU5sXyob9YzivI0m"
-DB_HOST = "dpg-cvd9jlhu0jms739lbnug-a.oregon-postgres.render.com"
-DB_PORT = 5432
+# Neon configuration
+DB_CONFIG = {
+    "dbname": os.getenv("DB_NAME", "Job-TrackingDataBase"),
+    "user": os.getenv("DB_USER", "neondb_owner"),
+    "password": os.getenv("DB_PASSWORD", "npg_Ut8s9TLJEVRq"),
+    "host": os.getenv("DB_HOST", "ep-cold-grass-abiz6twt-pooler.eu-west-2.aws.neon.tech"),
+    "port": os.getenv("DB_PORT", "5432"),
+    "sslmode": os.getenv("DB_SSLMODE", "require")
+}
 
-def connect_db():
-    return psycopg2.connect(
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=DB_PORT,
-        sslmode="require"
-    )
+# Create connection pool
+connection_pool = SimpleConnectionPool(
+    minconn=1,
+    maxconn=5,
+    **DB_CONFIG
+)
+
+def get_connection():
+    """Get a connection from the pool"""
+    return connection_pool.getconn()
+
+def return_connection(conn):
+    """Return a connection to the pool"""
+    connection_pool.putconn(conn)
 
 def create_table():
-    conn = connect_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS jobs (
-            id SERIAL PRIMARY KEY,
-            name TEXT,
-            job_num TEXT UNIQUE,
-            qty INTEGER,
-            details_of_job TEXT,
-            due_date DATE,
-            department TEXT,
-            person_in_charge TEXT,
-            status TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Automatically stores the current date & time
-        );
-    """)
-    conn.commit()
-    cursor.close()
-    conn.close()
-    
+    """Create database tables if they don't exist"""
+    conn = None
+    try:
+        conn = get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    username TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    role TEXT NOT NULL CHECK (role IN ('admin', 'manager', 'user')),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+                
+                CREATE TABLE IF NOT EXISTS jobs (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    job_num TEXT NOT NULL,
+                    qty INTEGER DEFAULT 1,
+                    details_of_job TEXT,
+                    due_date DATE,
+                    department TEXT,
+                    person_in_charge TEXT,
+                    status TEXT CHECK (status IN ('designing', 'in progress', 'waiting on approval', 'completed', 'on hold', 'to be fixed')),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    assigned_user_id INTEGER REFERENCES users(id)
+                );
+                
+                CREATE INDEX IF NOT EXISTS idx_jobs_assigned_user ON jobs(assigned_user_id);
+                CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+                CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at);
+            """)
+            conn.commit()
+    finally:
+        if conn:
+            return_connection(conn)
 
 def get_jobs():
-    conn = connect_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM jobs;")
-    jobs = cursor.fetchall()
-    conn.close()
-    return jobs
+    """Get all jobs from the database"""
+    conn = None
+    try:
+        conn = get_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM jobs;")
+            return cursor.fetchall()
+    finally:
+        if conn:
+            return_connection(conn)
 
-# Run this once to create the table
+# Initialize the database when this module is imported
 create_table()
