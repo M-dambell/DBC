@@ -489,6 +489,18 @@
             font-style: italic;
             user-select: none;
         }
+
+        /* Add to your existing styles */
+        #addUserButton {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+        }
+
+        #addUserButton i {
+            font-size: 14px;
+        }
         /* Add Font Awesome for icons */
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
     </style>
@@ -715,6 +727,12 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('user-management-modal')">&times;</span>
             <h2>User Management</h2>
+
+            <!-- Add this button below the heading -->
+            <button id="addUserButton" class="primary" style="margin-bottom: 15px;">
+                <i class="fas fa-user-plus"></i> Add New User
+            </button>
+            
             <div class="table-wrapper">
                 <table id="userTable">
                     <thead>
@@ -849,6 +867,14 @@
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('admin-register-container').classList.remove('hidden');
+            
+            // Change the "Back to App" button to go back to user management
+            const backButton = document.querySelector('#admin-register-container .secondary');
+            backButton.onclick = function() {
+                document.getElementById('admin-register-container').classList.add('hidden');
+                openModal('user-management-modal');
+                loadUsers(); // Refresh the user list
+            };
         }
     
         // Modal Functions
@@ -914,31 +940,53 @@
     
         async function handleRegister(event) {
             event.preventDefault();
-            if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
-                alert('Only admins can register users');
+            
+            // Clear previous errors
+            document.getElementById('register-error').textContent = '';
+            
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const role = document.getElementById('reg-role').value;
+            
+            // Basic validation
+            if (!username || !password) {
+                document.getElementById('register-error').textContent = 'Username and password are required';
                 return;
             }
-    
+            
+            if (username.length < 3) {
+                document.getElementById('register-error').textContent = 'Username must be at least 3 characters';
+                return;
+            }
+            
+            if (password.length < 6) {
+                document.getElementById('register-error').textContent = 'Password must be at least 6 characters';
+                return;
+            }
+
             try {
                 setLoading(true);
-                const data = await apiFetch(`${API_BASE}/register`, {
+                const response = await apiFetch(`${API_BASE}/register`, {
                     method: 'POST',
-                    body: JSON.stringify({
-                        username: document.getElementById('reg-username').value,
-                        password: document.getElementById('reg-password').value,
-                        role: document.getElementById('reg-role').value
-                    })
+                    body: JSON.stringify({ username, password, role })
                 });
-    
-                if (data.success) {
+
+                if (response.success) {
                     alert('User registered successfully');
                     document.getElementById('register-form').reset();
-                    showAppView();
+                    
+                    // Return to user management
+                    document.getElementById('admin-register-container').classList.add('hidden');
+                    openModal('user-management-modal');
+                    loadUsers();
                 } else {
-                    document.getElementById('register-error').textContent = data.error || 'Registration failed';
+                    document.getElementById('register-error').textContent = 
+                        response.error || 'Registration failed';
                 }
             } catch (error) {
-                document.getElementById('register-error').textContent = error.message || 'Registration failed';
+                console.error('Registration error:', error);
+                document.getElementById('register-error').textContent = 
+                    error.message || 'Registration failed. Please try again.';
             } finally {
                 setLoading(false);
             }
@@ -1342,6 +1390,12 @@
                 openModal('user-management-modal');
                 loadUsers();
             });
+
+            // Set up the Add User button
+            document.getElementById('addUserButton').addEventListener('click', openAddUserModal);
+
+            // Set up the registration form
+            document.getElementById('register-form').onsubmit = handleRegister;
     
             // Set up filter controls
             document.getElementById('statusFilter').addEventListener('change', function() {
@@ -1596,6 +1650,28 @@
                 console.error('API debug failed:', error);
             }
         };
+
+    // Add this with your other functions
+    function openAddUserModal() {
+            // Clear any previous values
+            document.getElementById('reg-username').value = '';
+            document.getElementById('reg-password').value = '';
+            document.getElementById('reg-role').value = 'user';
+            document.getElementById('register-error').textContent = '';
+            
+            // Close the user management modal
+            closeModal('user-management-modal');
+            
+            // Open the registration modal
+            document.getElementById('admin-register-container').classList.remove('hidden');
+            
+            // Update the back button to return to user management
+            const backButton = document.querySelector('#admin-register-container .secondary');
+            backButton.onclick = function() {
+                document.getElementById('admin-register-container').classList.add('hidden');
+                openModal('user-management-modal');
+            };
+        }
     </script>
 </body>
 </html>

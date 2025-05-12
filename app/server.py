@@ -112,19 +112,23 @@ def role_required(allowed_roles):
         return wrapped
     return decorator
 
-# --- User Management ---
+
 @app.route('/api/register', methods=['POST'])
 @token_required
 @role_required(['admin'])
 def register(current_user):
     """Register a new user"""
     data = request.get_json()
+    print(f"Registration attempt with data: {data}")  # Debug log
+    
     required_fields = ['username', 'password', 'role']
     if not all(field in data for field in required_fields):
-        return jsonify({"error": "Missing required fields"}), 400
+        print("Missing required fields")  # Debug log
+        return jsonify({"success": False, "error": "Missing required fields"}), 400
 
     if data['role'] not in ['admin', 'manager', 'user']:
-        return jsonify({"error": "Invalid role specified"}), 400
+        print("Invalid role specified")  # Debug log
+        return jsonify({"success": False, "error": "Invalid role specified"}), 400
 
     hashed_pw = generate_password_hash(data['password'])
     conn = None
@@ -132,6 +136,12 @@ def register(current_user):
     try:
         conn = get_neon_conn()
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            # First check if user exists
+            cursor.execute("SELECT id FROM users WHERE username = %s", (data['username'],))
+            if cursor.fetchone():
+                print("Username already exists")  # Debug log
+                return jsonify({"success": False, "error": "Username already exists"}), 409
+            
             cursor.execute("""
                 INSERT INTO users (username, password_hash, role)
                 VALUES (%s, %s, %s)
@@ -139,22 +149,19 @@ def register(current_user):
             """, (data['username'], hashed_pw, data['role']))
             new_user = cursor.fetchone()
             conn.commit()
+            print(f"New user created: {new_user}")  # Debug log
             return jsonify({
                 "success": True,
                 "message": "Registration successful",
-                "user": {
-                    "id": new_user['id'],
-                    "username": new_user['username'],
-                    "role": new_user['role']
-                }
+                "user": new_user
             }), 201
-    except psycopg2.IntegrityError:
-        return jsonify({"success": False, "error": "Username already exists"}), 409
     except Exception as e:
         if conn: conn.rollback()
+        print(f"Registration error: {str(e)}")  # Debug log
         return jsonify({"success": False, "error": f"Registration failed: {str(e)}"}), 500
     finally:
         if conn: neon_pool.putconn(conn)
+
 
 @app.route('/api/login', methods=['POST'])
 def login():

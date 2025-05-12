@@ -40,14 +40,18 @@ class NeonDB:
             cls.get_pool().putconn(conn)
 
 # Schema Initialization
+# Replace your existing table creation with this:
+# Replace your existing table creation with this:
 NeonDB.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
-        role TEXT NOT NULL
+        role TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT now()
     )
 """)
+
 
 NeonDB.execute("""
     CREATE TABLE IF NOT EXISTS jobs (
@@ -55,7 +59,6 @@ NeonDB.execute("""
         name TEXT NOT NULL,
         job_num TEXT NOT NULL,
         status TEXT NOT NULL,
-        -- Other columns...
-        created_at TIMESTAMP DEFAULT now()  # Neon-compatible timestamp
+        created_at TIMESTAMP DEFAULT now()
     )
 """)
