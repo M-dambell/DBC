@@ -310,7 +310,7 @@
         }
 
         .logo {
-            height: 70px; /* Adjust as needed */
+            height: 70px;
             width: auto;
             object-fit: contain;
         }
@@ -354,32 +354,143 @@
             font-size: 16px;
         }
 
+        /* Neon-specific additions */
+        .neon-status-badge {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+        }
+        .neon-connected {
+            background: #4caf50;
+            color: white;
+        }
+        .neon-connecting {
+            background: #ff9800;
+            color: white;
+        }
+        .neon-error {
+            background: #f44336;
+            color: white;
+        }
+        .neon-spinner {
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .role-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: capitalize;
+            display: inline-block;
+        }
+
+        .role-badge.admin {
+            background-color: #d32f2f;
+            color: white;
+        }
+
+        .role-badge.manager {
+            background-color: #1976d2;
+            color: white;
+        }
+
+        .role-badge.user {
+            background-color: #388e3c;
+            color: white;
+        }
+
+        .edit-btn {
+            background-color: #ffc107;
+            color: #000;
+            border: none;
+            padding: 5px 10px;
+            margin-right: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .current-user {
+            color: #666;
+            font-style: italic;
+        }
+
+        /* User Management Table Styles */
+        #userTable .actions-cell {
+            display: flex;
+            gap: 8px;
+        }
+
+        #userTable .edit-user-btn {
+            background-color: #ffc107;
+            color: #000;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
+
+        #userTable .delete-user-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
+
+        #userTable .current-user-label {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        #userTable .fa-edit,
+        #userTable .fa-trash-alt {
+            font-size: 14px;
+        }
+
+
+        #userTable .edit-user-btn:hover {
+            background-color: #e0a800;
+        }
+
+        #userTable .delete-user-btn:hover {
+            background-color: #c82333;
+        }
+
+        #userTable .current-user-label {
+            padding: 6px 12px;
+            color: #6c757d;
+            font-style: italic;
+            user-select: none;
+        }
         /* Add Font Awesome for icons */
         @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
-
-        /* Chatbot button specific styling */
-        #chatbotButton {
-            background-color: #9b59b6; /* Purple color to distinguish it */
-            margin-left: 10px;
-        }
-
-        #chatbotButton:hover {
-            background-color: #8e44ad;
-        }
-
-        /* Chatbot modal styling */
-        #chatbot-modal {
-            max-width: 800px;
-            width: 90%;
-        }
-
-        #chatbot-iframe {
-            width: 100%;
-            height: 70vh;
-            border: none;
-            border-radius: 8px;
-        }
-
     </style>
 </head>
 <body>
@@ -406,7 +517,6 @@
             <div>
                 <span id="current-user-role"></span>
                 <button id="manageUsersButton" class="primary">Manage Users</button>
-                <button id="chatbotButton" class="primary">Ask Database</button> <!-- New button -->
                 <button onclick="logout()" class="danger">Logout</button>
             </div>
         </div>
@@ -445,20 +555,16 @@
             <button id="createJobButton" class="primary">Create New Job</button>
             <button id="resetFilters" class="secondary">Reset Filters</button>
 
-            <div class="controls">
-                <!-- Existing controls... -->
-                
-                <div class="download-options">
-                    <button id="download-csv" class="download-btn" title="Download as CSV">
-                        <i class="fas fa-file-csv"></i> CSV
-                    </button>
-                    <button id="download-excel" class="download-btn" title="Download as Excel">
-                        <i class="fas fa-file-excel"></i> Excel
-                    </button>
-                    <button id="download-pdf" class="download-btn" title="Download as PDF">
-                        <i class="fas fa-file-pdf"></i> PDF
-                    </button>
-                </div>
+            <div class="download-options">
+                <button id="download-csv" class="download-btn" title="Download as CSV">
+                    <i class="fas fa-file-csv"></i> CSV
+                </button>
+                <button id="download-excel" class="download-btn" title="Download as Excel">
+                    <i class="fas fa-file-excel"></i> Excel
+                </button>
+                <button id="download-pdf" class="download-btn" title="Download as PDF">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </button>
             </div>
         </div>
 
@@ -466,16 +572,16 @@
             <table id="jobTable">
                 <thead>
                     <tr>
-                        <th onclick="sortJobs('id')">ID</th>
-                        <th onclick="sortJobs('name')">Name</th>
-                        <th onclick="sortJobs('job_num')">Job Num</th>
-                        <th onclick="sortJobs('qty')">Qty</th>
-                        <th onclick="sortJobs('details_of_job')">Details</th>
-                        <th onclick="sortJobs('due_date')">Due Date</th>
-                        <th onclick="sortJobs('department')">Department</th>
-                        <th onclick="sortJobs('person_in_charge')">Person</th>
-                        <th onclick="sortJobs('status')">Status</th>
-                        <th onclick="sortJobs('created_at')">Created At</th>
+                        <th onclick="sortJobs('id')">ID <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('name')">Name <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('job_num')">Job Num <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('qty')">Qty <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('details_of_job')">Details <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('due_date')">Due Date <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('department')">Department <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('person_in_charge')">Person <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('status')">Status <span class="sort-indicator">↕</span></th>
+                        <th onclick="sortJobs('created_at')">Created At <span class="sort-indicator">↕</span></th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -654,20 +760,11 @@
         </div>
     </div>
 
-    <!-- Chatbot Modal -->
-    <div id="chatbot-modal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('chatbot-modal')">&times;</span>
-            <h2>Database Assistant</h2>
-            <iframe id="chatbot-iframe" src="/chatbot.html"></iframe>
-        </div>
-    </div>
-
     <script>
         // API Configuration
         const API_BASE = '/api';
         let searchDebounce;
-
+    
         // Application State
         const currentState = {
             sortColumn: null,
@@ -676,7 +773,7 @@
             usersSortDirection: 'asc',
             isLoading: false,
             currentUser: null,
-            currentJobs: [], // Initialize as empty array
+            currentJobs: [],
             filters: {
                 status: 'all',
                 searchColumn: 'name',
@@ -685,7 +782,45 @@
                 endDate: ''
             }
         };
+    
+        // Enhanced API fetch function
+        async function apiFetch(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+                        ...options.headers
+                    }
+                });
 
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    if (text.includes('syntax error')) {
+                        throw new Error('Database error. Please contact support.');
+                    }
+                    throw new Error(text || 'Invalid response format');
+                }
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        logout();
+                        throw new Error('Session expired. Please login again.');
+                    }
+                    throw new Error(data.error || `Request failed with status ${response.status}`);
+                }
+
+                return data;
+            } catch (error) {
+                console.error('API request failed:', error);
+                throw error;
+            }
+        }
+    
         // View Management
         function showAuthView() {
             document.getElementById('auth-container').classList.remove('hidden');
@@ -693,7 +828,7 @@
             document.getElementById('admin-register-container').classList.add('hidden');
             closeAllModals();
         }
-
+    
         function showAppView() {
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('app-container').classList.remove('hidden');
@@ -709,84 +844,93 @@
                 document.getElementById('manageUsersButton').style.display = isAdmin ? 'inline-block' : 'none';
             }
         }
-
+    
         function showRegisterView() {
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('admin-register-container').classList.remove('hidden');
         }
-
+    
         // Modal Functions
         function openModal(modalId) {
             document.getElementById(modalId).classList.remove('hidden');
         }
-
+    
         function closeModal(modalId) {
             document.getElementById(modalId).classList.add('hidden');
         }
-
+    
         function closeAllModals() {
             document.querySelectorAll('.modal').forEach(modal => {
                 modal.classList.add('hidden');
             });
         }
-
+    
+        // Loading State
+        function setLoading(isLoading) {
+            currentState.isLoading = isLoading;
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(button => {
+                if (isLoading) {
+                    button.disabled = true;
+                } else {
+                    button.disabled = false;
+                }
+            });
+            
+            const searchButton = document.getElementById('searchButton');
+            if (searchButton) {
+                searchButton.innerHTML = isLoading ? 'Searching <span class="loading"></span>' : 'Search';
+            }
+        }
+    
         // Auth Functions
         async function handleLogin(event) {
             event.preventDefault();
             try {
                 setLoading(true);
-                const response = await fetch(`${API_BASE}/login`, {
+                const data = await apiFetch(`${API_BASE}/login`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         username: document.getElementById('login-username').value,
                         password: document.getElementById('login-password').value
                     })
                 });
-
-                const data = await response.json();
-                
-                if (response.ok) {
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    currentState.currentUser = data.user;
-                    showAppView();
-                    loadJobs();
-                } else {
-                    document.getElementById('login-error').textContent = data.error || 'Login failed';
-                }
+    
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                currentState.currentUser = data.user;
+                showAppView();
+                loadJobs();
             } catch (error) {
-                document.getElementById('login-error').textContent = 'Login failed';
+                document.getElementById('login-error').textContent = 
+                    error.message.includes('Invalid credentials') ? 'Invalid username or password' : 
+                    error.message.includes('Session expired') ? 'Session expired. Please login again.' :
+                    'Login failed. Please try again.';
             } finally {
                 setLoading(false);
             }
         }
-
+    
         async function handleRegister(event) {
             event.preventDefault();
             if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
                 alert('Only admins can register users');
                 return;
             }
-
+    
             try {
                 setLoading(true);
-                const response = await fetch(`${API_BASE}/register`, {
+                const data = await apiFetch(`${API_BASE}/register`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
                     body: JSON.stringify({
                         username: document.getElementById('reg-username').value,
                         password: document.getElementById('reg-password').value,
                         role: document.getElementById('reg-role').value
                     })
                 });
-
-                const data = await response.json();
-                if (response.ok && data.success) {
+    
+                if (data.success) {
                     alert('User registered successfully');
                     document.getElementById('register-form').reset();
                     showAppView();
@@ -794,29 +938,20 @@
                     document.getElementById('register-error').textContent = data.error || 'Registration failed';
                 }
             } catch (error) {
-                document.getElementById('register-error').textContent = 'Registration failed';
+                document.getElementById('register-error').textContent = error.message || 'Registration failed';
             } finally {
                 setLoading(false);
             }
         }
-
+    
         function logout() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             currentState.currentUser = null;
             showAuthView();
         }
-
+    
         // Job Management
-        function setLoading(isLoading) {
-            currentState.isLoading = isLoading;
-            const searchButton = document.getElementById('searchButton');
-            if (searchButton) {
-                searchButton.innerHTML = isLoading ? 'Searching <span class="loading"></span>' : 'Search';
-                searchButton.disabled = isLoading;
-            }
-        }
-
         async function loadJobs() {
             try {
                 setLoading(true);
@@ -845,85 +980,109 @@
                 }
                 
                 const queryString = queryParams.length ? `?${queryParams.join('&')}` : '';
-                const response = await fetch(`${API_BASE}/jobs${queryString}`, {
-                    headers: { 
-                        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
-                    }
-                });
+                const jobs = await apiFetch(`${API_BASE}/jobs${queryString}`);
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const jobs = await response.json();
-                currentState.currentJobs = jobs; // Store jobs for download
+                currentState.currentJobs = jobs;
                 renderJobs(jobs);
             } catch (error) {
-                console.error('Failed to load jobs:', error);
-                showError('Failed to load jobs. Please try again.');
-                if (error.message.includes('401')) {
+                showError(error.message);
+                if (error.message.includes('Session expired') || error.message.includes('401')) {
                     logout();
                 }
             } finally {
                 setLoading(false);
             }
         }
-
+    
         function renderJobs(jobs) {
             const tbody = document.getElementById('jobTable').querySelector('tbody');
-            tbody.innerHTML = jobs.map(job => `
-                <tr>
-                    <td>${job.id}</td>
-                    <td>${job.name}</td>
-                    <td>${job.job_num}</td>
-                    <td>${job.qty}</td>
-                    <td>${job.details_of_job || 'N/A'}</td>
-                    <td>${job.due_date || 'N/A'}</td>
-                    <td>${job.department}</td>
-                    <td>${job.person_in_charge || 'N/A'}</td>
-                    <td><span class="status-badge status-${job.status.replace(/\s+/g, '-')}">${job.status}</span></td>
-                    <td>${job.created_at}</td>
-                    <td>
-                        <button onclick="openEditModal(${job.id})">Edit</button>
-                        <button class="danger" onclick="deleteJob(${job.id})">Delete</button>
-                    </td>
-                </tr>
-            `).join('');
+            if (!tbody) return;
+            
+            if (!jobs || jobs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align: center;">No jobs found</td></tr>`;
+                return;
+            }
+    
+            let tableHTML = '';
+            const isAdmin = currentState.currentUser && currentState.currentUser.role === 'admin';
+            
+            jobs.forEach(job => {
+                const statusClass = `status-${job.status.replace(/\s+/g, '-').toLowerCase()}`;
+                tableHTML += `
+                    <tr>
+                        <td>${job.id}</td>
+                        <td>${job.name}</td>
+                        <td>${job.job_num}</td>
+                        <td>${job.qty}</td>
+                        <td>${job.details_of_job || 'N/A'}</td>
+                        <td>${job.due_date ? new Date(job.due_date).toLocaleDateString() : 'N/A'}</td>
+                        <td>${job.department}</td>
+                        <td>${job.person_in_charge || 'N/A'}</td>
+                        <td><span class="status-badge ${statusClass}">${job.status}</span></td>
+                        <td>${job.created_at ? new Date(job.created_at).toLocaleString() : 'N/A'}</td>
+                        <td>
+                            ${isAdmin ? `
+                                <button onclick="openEditModal(${JSON.stringify(job).replace(/"/g, '&quot;')})">Edit</button>
+                                <button class="danger" onclick="deleteJob(${job.id})">Delete</button>
+                            ` : '<span>View Only</span>'}
+                        </td>
+                    </tr>`;
+            });
+            
+            tbody.innerHTML = tableHTML;
         }
-
+    
+        function showError(message) {
+            const tbody = document.getElementById('jobTable').querySelector('tbody');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="11" style="color: red; text-align: center;">${message}</td></tr>`;
+            }
+        }
+    
         // User Management
+        // Update the loadUsers function to handle Neon-specific cases
         async function loadUsers() {
             try {
                 setLoading(true);
-                const queryParams = [];
-                
-                if (currentState.usersSortColumn) {
-                    queryParams.push(`sort=${encodeURIComponent(currentState.usersSortColumn)}`);
-                    queryParams.push(`order=${encodeURIComponent(currentState.usersSortDirection)}`);
-                }
-                
-                const queryString = queryParams.length ? `?${queryParams.join('&')}` : '';
-                const response = await fetch(`${API_BASE}/users${queryString}`, {
+                const response = await fetch(`${API_BASE}/users`, {
                     headers: { 
                         'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
                     }
                 });
-                
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                
+
+                // Handle potential HTML responses (like 502 errors)
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    if (text.startsWith('<!DOCTYPE html>')) {
+                        throw new Error('Database connection issue. Try again in a moment.');
+                    }
+                    throw new Error(text || 'Invalid response format');
+                }
+
                 const users = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(users.error || `Request failed with status ${response.status}`);
+                }
+                
                 renderUsers(users);
             } catch (error) {
                 console.error('Failed to load users:', error);
-                showUsersError('Failed to load users. Please try again.');
-                if (error.message.includes('401')) {
+                showUsersError(
+                    error.message.includes('Database connection issue') ? 
+                    'Database is warming up. Please try again in a moment.' :
+                    'Failed to load users. Please try again.'
+                );
+                
+                if (error.message.includes('Session expired') || error.message.includes('401')) {
                     logout();
                 }
             } finally {
                 setLoading(false);
             }
         }
-
+    
         function renderUsers(users) {
             const tbody = document.getElementById('userTable').querySelector('tbody');
             if (!tbody) return;
@@ -943,32 +1102,47 @@
                         <td>${user.username}</td>
                         <td>${user.role}</td>
                         <td>${user.created_at || 'N/A'}</td>
-                        <td>
+                        <td class="actions-cell">
                             ${currentUserId !== user.id ? `
-                                <button onclick="openEditUserModal(${JSON.stringify(user).replace(/"/g, '&quot;')})">Edit</button>
-                                <button class="danger" onclick="deleteUser(${user.id})">Delete</button>
-                            ` : '<span>Current User</span>'}
+                                <button class="edit-user-btn" onclick="openEditUserModal(${JSON.stringify(user).replace(/"/g, '&quot;')})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="delete-user-btn" onclick="deleteUser(${user.id})">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                            ` : '<span class="current-user-label">Current User</span>'}
                         </td>
                     </tr>`;
             });
             
             tbody.innerHTML = tableHTML;
         }
-
-        function showError(message) {
-            const tbody = document.getElementById('jobTable').querySelector('tbody');
-            if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="11" style="color: red; text-align: center;">${message}</td></tr>`;
-            }
-        }
-
+    
         function showUsersError(message) {
             const tbody = document.getElementById('userTable').querySelector('tbody');
             if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="5" style="color: red; text-align: center;">${message}</td></tr>`;
+                // More user-friendly error messages
+                let displayMessage = message;
+                
+                if (message.includes('syntax error')) {
+                    displayMessage = 'System error. Our team has been notified.';
+                } else if (message.includes('Failed to fetch')) {
+                    displayMessage = 'Connection error. Please check your network.';
+                }
+                
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #d32f2f; padding: 20px;">
+                            ${displayMessage}
+                            <br>
+                            <button onclick="loadUsers()" style="margin-top: 10px;">
+                                <i class="fas fa-sync-alt"></i> Try Again
+                            </button>
+                        </td>
+                    </tr>`;
             }
         }
-
+    
         // Form Handlers
         async function handleCreateJob(event) {
             event.preventDefault();
@@ -977,7 +1151,7 @@
                 alert('You must be logged in to create jobs');
                 return;
             }
-
+    
             try {
                 setLoading(true);
                 const formData = {
@@ -988,40 +1162,28 @@
                     department: document.getElementById('job-department').value,
                     person_in_charge: document.getElementById('job-person').value,
                     status: document.getElementById('job-status').value,
+                    assigned_user_id: currentState.currentUser.id
                 };
-
-                // Only include due_date if it has a value
+    
                 const dueDate = document.getElementById('job-due-date').value;
-                if (dueDate) {
-                    formData.due_date = dueDate;
-                }
-
-                const response = await fetch(`${API_BASE}/jobs`, {
+                if (dueDate) formData.due_date = dueDate;
+    
+                await apiFetch(`${API_BASE}/jobs`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
                     body: JSON.stringify(formData)
                 });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to create job');
-                }
-
+    
                 closeModal('create-job-modal');
                 document.getElementById('create-job-form').reset();
                 loadJobs();
                 alert('Job created successfully!');
             } catch (error) {
-                console.error('Error creating job:', error);
                 alert(`Error: ${error.message}`);
             } finally {
                 setLoading(false);
             }
         }
-
+    
         async function handleEditJob(event) {
             event.preventDefault();
             
@@ -1029,10 +1191,10 @@
                 alert('Only admins can edit jobs');
                 return;
             }
-
+    
             const jobId = document.getElementById('edit-job-id').value;
             if (!jobId) return;
-
+    
             try {
                 setLoading(true);
                 const formData = {
@@ -1044,38 +1206,25 @@
                     person_in_charge: document.getElementById('edit-job-person').value,
                     status: document.getElementById('edit-job-status').value
                 };
-
-                // Only include due_date if it has a value
+    
                 const dueDate = document.getElementById('edit-job-due-date').value;
-                if (dueDate) {
-                    formData.due_date = dueDate;
-                }
-
-                const response = await fetch(`${API_BASE}/jobs/${jobId}`, {
+                if (dueDate) formData.due_date = dueDate;
+    
+                await apiFetch(`${API_BASE}/jobs/${jobId}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
                     body: JSON.stringify(formData)
                 });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to update job');
-                }
-
+    
                 closeModal('edit-job-modal');
                 loadJobs();
                 alert('Job updated successfully!');
             } catch (error) {
-                console.error('Error updating job:', error);
                 alert(`Error: ${error.message}`);
             } finally {
                 setLoading(false);
             }
         }
-
+    
         async function handleEditUser(event) {
             event.preventDefault();
             
@@ -1083,48 +1232,35 @@
                 alert('Only admins can edit users');
                 return;
             }
-
+    
             const userId = document.getElementById('edit-user-id').value;
             if (!userId) return;
-
+    
             try {
                 setLoading(true);
                 const formData = {
                     username: document.getElementById('edit-username').value,
                     role: document.getElementById('edit-user-role').value
                 };
-
-                // Only include password if it has a value
+    
                 const password = document.getElementById('edit-user-password').value;
-                if (password) {
-                    formData.password = password;
-                }
-
-                const response = await fetch(`${API_BASE}/users/${userId}`, {
+                if (password) formData.password = password;
+    
+                await apiFetch(`${API_BASE}/users/${userId}`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
                     body: JSON.stringify(formData)
                 });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to update user');
-                }
-
+    
                 closeModal('edit-user-modal');
                 loadUsers();
                 alert('User updated successfully!');
             } catch (error) {
-                console.error('Error updating user:', error);
                 alert(`Error: ${error.message}`);
             } finally {
                 setLoading(false);
             }
         }
-
+    
         // Table Download Functions
         function convertToCSV(data) {
             if (!data || data.length === 0) return '';
@@ -1137,7 +1273,7 @@
             );
             return [headers, ...rows].join('\n');
         }
-
+    
         function downloadCSV() {
             if (!currentState.currentJobs || currentState.currentJobs.length === 0) {
                 alert('No data to download');
@@ -1154,7 +1290,7 @@
             link.click();
             document.body.removeChild(link);
         }
-
+    
         function downloadExcel() {
             if (!currentState.currentJobs || currentState.currentJobs.length === 0) {
                 alert('No data to download');
@@ -1166,7 +1302,7 @@
             XLSX.utils.book_append_sheet(workbook, worksheet, "Jobs");
             XLSX.writeFile(workbook, `jobs_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
-
+    
         function downloadPDF() {
             if (!currentState.currentJobs || currentState.currentJobs.length === 0) {
                 alert('No data to download');
@@ -1186,24 +1322,7 @@
             
             doc.save(`jobs_${new Date().toISOString().slice(0,10)}.pdf`);
         }
-
-        function addMessage(text, isUser, isSQL = false) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
-            
-            if (isSQL) {
-                const sqlDiv = document.createElement('div');
-                sqlDiv.className = 'sql-message';
-                sqlDiv.textContent = text;
-                messageDiv.appendChild(sqlDiv);
-            } else {
-                messageDiv.textContent = text;
-            }
-            
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
+    
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
             // Set up form handlers
@@ -1217,19 +1336,19 @@
             document.getElementById('createJobButton').addEventListener('click', () => {
                 openModal('create-job-modal');
             });
-
+    
             // Set up user management button
             document.getElementById('manageUsersButton').addEventListener('click', () => {
                 openModal('user-management-modal');
                 loadUsers();
             });
-
+    
             // Set up filter controls
             document.getElementById('statusFilter').addEventListener('change', function() {
                 currentState.filters.status = this.value;
                 loadJobs();
             });
-
+    
             document.getElementById('searchInput').addEventListener('input', function() {
                 clearTimeout(searchDebounce);
                 searchDebounce = setTimeout(function() {
@@ -1237,14 +1356,14 @@
                     loadJobs();
                 }.bind(this), 300);
             });
-
+    
             document.getElementById('searchColumn').addEventListener('change', function() {
                 currentState.filters.searchColumn = this.value;
                 if (currentState.filters.searchTerm) {
                     loadJobs();
                 }
             });
-
+    
             document.getElementById('dateFilterButton').addEventListener('click', function() {
                 currentState.filters.startDate = document.getElementById('startDate').value;
                 currentState.filters.endDate = document.getElementById('endDate').value;
@@ -1257,7 +1376,7 @@
                 
                 loadJobs();
             });
-
+    
             document.getElementById('resetFilters').addEventListener('click', function() {
                 document.getElementById('statusFilter').value = 'all';
                 document.getElementById('searchInput').value = '';
@@ -1281,26 +1400,26 @@
                 
                 loadJobs();
             });
-
+    
             // Close buttons for modals
             document.querySelectorAll('.modal .close').forEach(button => {
                 button.addEventListener('click', function() {
                     closeModal(this.closest('.modal').id);
                 });
             });
-
+    
             // Click outside to close modals
             window.addEventListener('click', function(event) {
                 if (event.target.classList.contains('modal')) {
                     closeModal(event.target.id);
                 }
             });
-
+    
             // Set up download buttons
             document.getElementById('download-csv').addEventListener('click', downloadCSV);
             document.getElementById('download-excel').addEventListener('click', downloadExcel);
             document.getElementById('download-pdf').addEventListener('click', downloadPDF);
-
+    
             // Check existing session
             const token = localStorage.getItem('token');
             const user = localStorage.getItem('user');
@@ -1308,8 +1427,18 @@
             if (token && user) {
                 try {
                     currentState.currentUser = JSON.parse(user);
-                    showAppView();
-                    loadJobs();
+                    
+                    // Verify token is still valid
+                    apiFetch(`${API_BASE}/health`)
+                        .then(() => {
+                            showAppView();
+                            loadJobs();
+                        })
+                        .catch(() => {
+                            localStorage.removeItem('token');
+                            localStorage.removeItem('user');
+                            showAuthView();
+                        });
                 } catch (e) {
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
@@ -1318,16 +1447,8 @@
             } else {
                 showAuthView();
             }
-
-            // Add to your DOMContentLoaded event listener:
-            document.getElementById('chatbotButton').addEventListener('click', () => {
-                openModal('chatbot-modal');
-                
-                // Reset the iframe to ensure fresh state
-                document.getElementById('chatbot-iframe').src = '/chatbot.html';
-            });
         });
-
+    
         // Global functions
         window.sortJobs = function(column) {
             if (currentState.isLoading) return;
@@ -1353,7 +1474,7 @@
             
             loadJobs();
         };
-
+    
         window.sortUsers = function(column) {
             if (currentState.isLoading) return;
             
@@ -1378,7 +1499,7 @@
             
             loadUsers();
         };
-
+    
         window.deleteJob = function(jobId) {
             if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
                 alert('Only admins can delete jobs');
@@ -1387,96 +1508,68 @@
             
             if (!confirm('Are you sure you want to delete this job?')) return;
             
-            fetch(`${API_BASE}/jobs/${jobId}`, {
-                method: 'DELETE',
-                headers: { 
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
+            apiFetch(`${API_BASE}/jobs/${jobId}`, {
+                method: 'DELETE'
             })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to delete job');
+            .then(() => {
                 loadJobs();
                 alert('Job deleted successfully!');
             })
             .catch(error => {
-                console.error('Error deleting job:', error);
                 alert(`Error: ${error.message}`);
             });
         };
-
+    
         window.deleteUser = function(userId) {
-            console.log('[DEBUG] Attempting to delete user ID:', userId);
-            
             if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
-                console.log('[DEBUG] Fail: Not admin');
                 alert('Only admins can delete users');
                 return;
             }
             
             if (userId === currentState.currentUser.id) {
-                console.log('[DEBUG] Fail: Self-deletion attempt');
                 alert('You cannot delete your own account');
                 return;
             }
             
-            if (!confirm('Are you sure you want to delete this user?')) {
-                console.log('[DEBUG] User cancelled deletion');
-                return;
-            }
-
-            console.log('[DEBUG] Sending DELETE request...');
-            fetch(`${API_BASE}/users/${userId}`, {
-                method: 'DELETE',
-                headers: { 
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            })
-            .then(response => {
-                console.log('[DEBUG] Received response:', response.status);
-                if (!response.ok) {
-                    return response.json().then(err => {
-                        console.log('[DEBUG] Error response body:', err);
-                        throw new Error(err.error || 'Failed to delete user');
-                    });
-                }
-                return response.json();
+            if (!confirm('Are you sure you want to delete this user?')) return;
+    
+            apiFetch(`${API_BASE}/users/${userId}`, {
+                method: 'DELETE'
             })
             .then(data => {
-                console.log('[DEBUG] Success:', data);
                 loadUsers();
                 alert(data.message || 'User deleted successfully!');
             })
             .catch(error => {
-                console.error('[DEBUG] Full error:', error);
                 alert(`Error: ${error.message}`);
             });
         };
-
+    
         window.openEditModal = function(job) {
             if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
                 alert('Only admins can edit jobs');
                 return;
             }
-
+    
             document.getElementById('edit-job-id').value = job.id;
             document.getElementById('edit-job-name').value = job.name;
             document.getElementById('edit-job-number').value = job.job_num;
             document.getElementById('edit-job-quantity').value = job.qty;
             document.getElementById('edit-job-details').value = job.details_of_job || '';
-            document.getElementById('edit-job-due-date').value = job.due_date || '';
+            document.getElementById('edit-job-due-date').value = job.due_date ? job.due_date.split('T')[0] : '';
             document.getElementById('edit-job-department').value = job.department || '';
             document.getElementById('edit-job-person').value = job.person_in_charge || '';
             document.getElementById('edit-job-status').value = job.status;
             
             openModal('edit-job-modal');
         };
-
+    
         window.openEditUserModal = function(user) {
             if (!currentState.currentUser || currentState.currentUser.role !== 'admin') {
                 alert('Only admins can edit users');
                 return;
             }
-
+    
             document.getElementById('edit-user-id').value = user.id;
             document.getElementById('edit-username').value = user.username;
             document.getElementById('edit-user-role').value = user.role;
@@ -1484,10 +1577,24 @@
             
             openModal('edit-user-modal');
         };
-
-        // Add this to your global functions:
-        window.openChatbot = function() {
-            openModal('chatbot-modal');
+    
+        // Debug function
+        window.debugAPI = async function() {
+            try {
+                console.log('Testing API connection...');
+                const health = await apiFetch(`${API_BASE}/health`);
+                console.log('Health check:', health);
+                
+                if (currentState.currentUser) {
+                    const jobs = await apiFetch(`${API_BASE}/jobs?limit=1`);
+                    console.log('Jobs sample:', jobs);
+                    
+                    const users = await apiFetch(`${API_BASE}/users?limit=1`);
+                    console.log('Users sample:', users);
+                }
+            } catch (error) {
+                console.error('API debug failed:', error);
+            }
         };
     </script>
 </body>
