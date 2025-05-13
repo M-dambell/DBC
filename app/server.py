@@ -9,55 +9,80 @@ from datetime import datetime, timedelta
 import jwt
 from flask_cors import CORS
 import openai
+import time  # Added missing import
 
 # Initialize Flask app
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(24).hex()
 CORS(app)
 
-# Updated Neon Configuration (remove the options parameter)
+# Updated Neon Configuration
 NEON_CONFIG = {
     "host": os.getenv("NEON_HOST", "ep-cold-grass-abiz6twt-pooler.eu-west-2.aws.neon.tech"),
     "database": os.getenv("NEON_DB", "Job-TrackingDataBase"),
     "user": os.getenv("NEON_USER", "neondb_owner"),
     "password": os.getenv("NEON_PASSWORD", "npg_Ut8s9TLJEVRq"),
-    "sslmode": "require"
-    # Removed the options parameter that was causing the error
+    "sslmode": "require",
+    "connect_timeout": 5,
+    "keepalives": 1,
+    "keepalives_idle": 30,
+    "keepalives_interval": 10,
+    "keepalives_count": 5
 }
 
-# Connection Pool for Neon
+
+# Improved connection pool with better error handling
 neon_pool = SimpleConnectionPool(
     minconn=1,
-    maxconn=5,  # Neon free tier allows 5 max connections
+    maxconn=5,
     **NEON_CONFIG
 )
 
 def get_neon_conn():
     """Get connection from Neon pool with retry logic"""
-    try:
-        conn = neon_pool.getconn()
-        conn.autocommit = False  # Important for transaction control
-        
-        # Set statement timeout on the connection after getting it from the pool
-        with conn.cursor() as cur:
-            cur.execute("SET statement_timeout = 5000")  # 5 seconds timeout
-        
-        return conn
-    except psycopg2.OperationalError as e:
-        print(f"Connection error: {e}. Attempting new connection...")
-        conn = psycopg2.connect(**NEON_CONFIG)
-        conn.autocommit = False
-        
-        # Set timeout for direct connections too
-        with conn.cursor() as cur:
-            cur.execute("SET statement_timeout = 5000")
+    max_retries = 3
+    retry_delay = 1  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            conn = neon_pool.getconn()
+            if conn.closed:
+                conn = psycopg2.connect(**NEON_CONFIG)
             
-        return conn
+            # Test the connection
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+            
+            return conn
+        except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
+            print(f"Connection attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+                continue
+            raise
+        except Exception as e:
+            print(f"Unexpected error getting connection: {e}")
+            raise
 
+def close_neon_conn(conn):
+    """Properly close/return a connection"""
+    try:
+        if conn:
+            if not conn.closed:
+                conn.rollback()  # Always rollback before returning
+            neon_pool.putconn(conn)
+    except Exception as e:
+        print(f"Error returning connection to pool: {e}")
+        try:
+            conn.close()
+        except:
+            pass
+        
 # JWT configuration
 JWT_SECRET = os.environ.get('JWT_SECRET') or os.urandom(24).hex()
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRE_HOURS = 24
+
 
 # OpenAI configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "your-openai-api-key")
@@ -78,7 +103,7 @@ def get_user_by_id(user_id):
         print(f"Error fetching user: {e}")
         return None
     finally:
-        if conn: neon_pool.putconn(conn)
+        close_neon_conn(conn)
 
 # --- Auth Decorators ---
 def token_required(f):
@@ -113,21 +138,18 @@ def role_required(allowed_roles):
     return decorator
 
 
+# --- Routes ---
 @app.route('/api/register', methods=['POST'])
 @token_required
 @role_required(['admin'])
 def register(current_user):
     """Register a new user"""
     data = request.get_json()
-    print(f"Registration attempt with data: {data}")  # Debug log
-    
     required_fields = ['username', 'password', 'role']
     if not all(field in data for field in required_fields):
-        print("Missing required fields")  # Debug log
         return jsonify({"success": False, "error": "Missing required fields"}), 400
 
     if data['role'] not in ['admin', 'manager', 'user']:
-        print("Invalid role specified")  # Debug log
         return jsonify({"success": False, "error": "Invalid role specified"}), 400
 
     hashed_pw = generate_password_hash(data['password'])
@@ -136,10 +158,8 @@ def register(current_user):
     try:
         conn = get_neon_conn()
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            # First check if user exists
             cursor.execute("SELECT id FROM users WHERE username = %s", (data['username'],))
             if cursor.fetchone():
-                print("Username already exists")  # Debug log
                 return jsonify({"success": False, "error": "Username already exists"}), 409
             
             cursor.execute("""
@@ -149,7 +169,6 @@ def register(current_user):
             """, (data['username'], hashed_pw, data['role']))
             new_user = cursor.fetchone()
             conn.commit()
-            print(f"New user created: {new_user}")  # Debug log
             return jsonify({
                 "success": True,
                 "message": "Registration successful",
@@ -157,10 +176,9 @@ def register(current_user):
             }), 201
     except Exception as e:
         if conn: conn.rollback()
-        print(f"Registration error: {str(e)}")  # Debug log
         return jsonify({"success": False, "error": f"Registration failed: {str(e)}"}), 500
     finally:
-        if conn: neon_pool.putconn(conn)
+        close_neon_conn(conn)
 
 
 @app.route('/api/login', methods=['POST'])
@@ -201,7 +219,7 @@ def login():
     except Exception as e:
         return jsonify({"error": f"Login failed: {str(e)}"}), 500
     finally:
-        if conn: neon_pool.putconn(conn)
+        close_neon_conn(conn)
 
 # --- Job Management ---
 @app.route('/api/jobs', methods=['GET'])
@@ -266,7 +284,7 @@ def get_jobs(current_user):
     except Exception as e:
         return jsonify({"error": f"Failed to fetch jobs: {str(e)}"}), 500
     finally:
-        if conn: neon_pool.putconn(conn)
+        close_neon_conn(conn)
 
 @app.route('/api/jobs', methods=['POST'])
 @token_required
@@ -317,7 +335,7 @@ def create_job(current_user):
         if conn: conn.rollback()
         return jsonify({"error": f"Failed to create job: {str(e)}"}), 500
     finally:
-        if conn: neon_pool.putconn(conn)
+        close_neon_conn(conn)
 
 @app.route('/api/jobs/<int:job_id>', methods=['PUT'])
 @token_required
@@ -376,7 +394,7 @@ def update_job(current_user, job_id):
         if conn: conn.rollback()
         return jsonify({"error": f"Failed to update job: {str(e)}"}), 500
     finally:
-        if conn: neon_pool.putconn(conn)
+        close_neon_conn(conn)
 
 @app.route('/api/jobs/<int:job_id>', methods=['DELETE'])
 @token_required
@@ -403,7 +421,7 @@ def delete_job(current_user, job_id):
         if conn: conn.rollback()
         return jsonify({"error": f"Failed to delete job: {str(e)}"}), 500
     finally:
-        if conn: neon_pool.putconn(conn)
+        close_neon_conn(conn)
 
 # In your server.py, update the users endpoint:
 @app.route('/api/users', methods=['GET'])
@@ -432,7 +450,7 @@ def get_users(current_user):
     except Exception as e:
         return jsonify({"error": f"Failed to fetch users: {str(e)}"}), 500
     finally:
-        if conn: neon_pool.putconn(conn)
+        close_neon_conn(conn)
 
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
 @token_required
@@ -495,7 +513,7 @@ def update_user(current_user, user_id):
         if conn: conn.rollback()
         return jsonify({"error": f"Failed to update user: {str(e)}"}), 500
     finally:
-        if conn: neon_pool.putconn(conn)
+        close_neon_conn(conn)
 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 @token_required
@@ -537,7 +555,7 @@ def delete_user(current_user, user_id):
             "message": "Please try again or contact support"
         }), 500
     finally:
-        if conn: neon_pool.putconn(conn)
+        close_neon_conn(conn)
 
 # --- Chatbot Integration ---
 @app.route('/api/chatbot', methods=['POST'])
@@ -583,7 +601,7 @@ def chatbot(current_user):
                 "results": results
             })
         finally:
-            if conn: neon_pool.putconn(conn)
+            close_neon_conn(conn)
             
     except Exception as e:
         return jsonify({
@@ -612,7 +630,7 @@ def health_check():
             "error": str(e)
         }), 500
     finally:
-        if conn: neon_pool.putconn(conn)
+        close_neon_conn(conn)
 
 # --- Frontend Serving ---
 @app.route('/', defaults={'path': ''})
